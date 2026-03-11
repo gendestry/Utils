@@ -34,6 +34,8 @@ namespace Utils::Regex
         virtual unsigned int _match(std::string text, unsigned int start) = 0;
         virtual Match match(std::string text, unsigned int start) = 0;
 
+        bool isOtional() const { if (m_OpType == QUESTION_MARK || m_OpType == ASTERIX) return true; return false; };
+
         std::string toOpString()
         {
             switch (m_OpType)

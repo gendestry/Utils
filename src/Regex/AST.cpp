@@ -186,9 +186,9 @@ namespace Utils::Regex
     Match AstNodeTxt::match(std::string text, unsigned int start)
     {
         if (start >= text.size() || start + txt.size() > text.size()) {
-            // if (m_OpType == OpType::ASTERIX || m_OpType == OpType::QUESTION_MARK) {
-            //     return {true, start};
-            // }
+            if (isOtional()) {
+                return {true, start};
+            }
             return {false, start};
         }
 

@@ -25,13 +25,10 @@
 
 #include <string>
 int main() {
-    std::string text = "1234567";
-    std::cout << text.substr(1) << std::endl;
     // Regex::Regex t(R"(\T+)");
-    Utils::Regex::Matcher t("'1'+");
-    auto m = t.findFirst("aaaa111q");
-    if (m.has_value()) {
-        std::cout << std::to_string(m.value()) << " " << t.getMatch() << std::endl;
+    Utils::Regex::Matcher t("('a''b'? | ('1'| '22'))+");
+    if (t.match("a2")) {
+        std::cout << t.getMatch() << std::endl;
     }
 
     return 0;

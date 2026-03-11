@@ -117,7 +117,8 @@ namespace Utils::Regex
         }
 
         // m_MaxMatch = start;
-        return start;
+        // return start;
+        return true;
     }
 
     std::optional<unsigned int> Matcher::findFirst(const std::string &text)
