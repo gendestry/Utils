@@ -1,10 +1,10 @@
-#include "ast.h"
-#include "../utils/font.h"
+#include "AST.h"
+#include "Text/Font.h"
 #include <iostream>
 
 using namespace Utils;
 
-namespace Regex
+namespace Utils::Regex
 {
 
     unsigned int AstNodeParen::_match(std::string text, unsigned int st)
@@ -185,8 +185,12 @@ namespace Regex
 
     Match AstNodeTxt::match(std::string text, unsigned int start)
     {
-        if (start >= text.size() || start + txt.size() > text.size())
+        if (start >= text.size() || start + txt.size() > text.size()) {
+            // if (m_OpType == OpType::ASTERIX || m_OpType == OpType::QUESTION_MARK) {
+            //     return {true, start};
+            // }
             return {false, start};
+        }
 
         unsigned int s = start;
         unsigned int m = _match(text, start);
@@ -311,7 +315,7 @@ namespace Regex
 
     std::string AstNodeParen::toPrettyString()
     {
-        std::string str = Font::fmagenta + "(";
+        std::string str = Font::colorMagenta + "(";
         for (auto &op : m_Ops)
         {
             for (auto &o : op)
@@ -322,18 +326,18 @@ namespace Regex
         }
 
         str = str.substr(0, str.size() - 3);
-        str += Font::fmagenta + ")";
-        return str + toOpString() + Font::reset;
+        str += Font::colorMagenta + ")";
+        return str + toOpString() + Font::colorReset;
     }
 
     std::string AstNodeEscape::toPrettyString()
     {
-        return Font::fred + toEscapeString() + toOpString() + Font::reset;
+        return Font::colorRed + toEscapeString() + toOpString() + Font::colorReset;
     }
 
     std::string AstNodeTxt::toPrettyString()
     {
-        return Font::fblue + "'" + txt + toOpString() + "'" + Font::reset;
+        return Font::colorBlue + "'" + txt + toOpString() + "'" + Font::colorReset;
     }
 
     std::string AstNodeRange::toPrettyString()
@@ -343,6 +347,6 @@ namespace Regex
         ret += "-";
         ret += m_End;
         ret += "]";
-        return Font::fgreen + ret + toOpString() + Font::reset;
+        return Font::colorGreen + ret + toOpString() + Font::colorReset;
     }
 };

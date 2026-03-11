@@ -1,9 +1,9 @@
 #pragma once
 #include <vector>
-#include "token.h"
-#include "ast.h"
+#include "Token.h"
+#include "AST.h"
 
-namespace Regex
+namespace Utils::Regex
 {
     using TokenArray = std::vector<Token>;
     using Pattern = std::vector<AstNodeOps *>;

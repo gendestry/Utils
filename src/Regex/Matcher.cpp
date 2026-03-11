@@ -1,15 +1,16 @@
 #include <iostream>
-#include "regex.h"
-#include "../utils/font.h"
+#include "Matcher.h"
+#include "Text/Font.h"
 
-using Utils::Font;
+using namespace Utils;
 
-namespace Regex
+namespace Utils::Regex
 {
-    Regex::Regex(std::string pattern) : m_Pattern(pattern)
+    Matcher::Matcher(std::string pattern) : m_Pattern(pattern)
     {
         m_Tokenizer = std::make_unique<Tokenizer>(pattern);
         m_Tokenizer->tokenize();
+        m_Tokenizer->print_tokens();
 
         m_Syntax = std::make_unique<Syntax>(m_Tokenizer->get_tokens());
         m_Valid = m_Syntax->parse();
@@ -20,7 +21,7 @@ namespace Regex
         }
     }
 
-    Regex::Regex(const Regex &other)
+    Matcher::Matcher(const Matcher &other)
         : m_Pattern(other.m_Pattern),
           m_Valid(other.m_Valid),
           m_Tokenizer(std::make_unique<Tokenizer>(*other.m_Tokenizer)),
@@ -28,7 +29,7 @@ namespace Regex
     {
     }
 
-    Regex::Regex(Regex &&other) noexcept
+    Matcher::Matcher(Matcher &&other) noexcept
         : m_Pattern(std::move(other.m_Pattern)),
           m_Tokenizer(std::move(other.m_Tokenizer)),
           m_Syntax(std::move(other.m_Syntax)),
@@ -37,7 +38,7 @@ namespace Regex
     }
 
     // operators
-    Regex &Regex::operator=(const Regex &other)
+    Matcher &Matcher::operator=(const Matcher &other)
     {
         if (this != &other)
         {
@@ -50,7 +51,7 @@ namespace Regex
         return *this;
     }
 
-    Regex &Regex::operator=(Regex &&other) noexcept
+    Matcher &Matcher::operator=(Matcher &&other) noexcept
     {
         if (this != &other)
         {
@@ -63,18 +64,18 @@ namespace Regex
         return *this;
     }
 
-    void Regex::printTokens()
+    void Matcher::printTokens()
     {
         m_Tokenizer->print_tokens();
     }
 
-    void Regex::printAst()
+    void Matcher::printAst()
     {
         if (m_Valid)
             m_Syntax->printAst();
     }
 
-    void Regex::prettyPrint()
+    void Matcher::prettyPrint()
     {
         if (m_Valid)
         {
@@ -86,7 +87,7 @@ namespace Regex
         }
     }
 
-    bool Regex::match(const std::string &text)
+    bool Matcher::match(const std::string &text)
     {
         if (!m_Valid)
             return false;

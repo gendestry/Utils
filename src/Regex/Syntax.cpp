@@ -1,14 +1,20 @@
-#include "syntax.h"
+#include "Syntax.h"
 #include <iostream>
 
-namespace Regex
+namespace Utils::Regex
 {
     bool Syntax::parse()
     {
         if (isInter())
         {
-            while (isInter())
-                ;
+            if (m_TokenPos >= m_Tokens.size()) {
+                return true;
+            }
+            while (isInter()) {
+                if (m_TokenPos >= m_Tokens.size()) {
+                    return true;
+                }
+            }
             return true;
         }
 
@@ -17,6 +23,7 @@ namespace Regex
 
     bool Syntax::isInter()
     {
+
         Pos old = m_TokenPos;
         if (isParen())
         {
@@ -42,6 +49,15 @@ namespace Regex
             // std::cout << "Range: " << old << ", " << m_TokenPos << std::endl;
             return true;
         }
+
+        // if (m_TokenPos+1 < m_Tokens.size()) {
+        //     m_TokenPos++;
+        //     if (isOperator()) {
+        //         if (m_OpType == OpType::ASTERIX || m_OpType == OpType::QUESTION_MARK) {
+        //             return true;
+        //         }
+        //     }
+        // }
 
         m_TokenPos = old;
         return false;
@@ -111,8 +127,12 @@ namespace Regex
 
             if (m_Tokens[m_TokenPos++].type == Token::RPAREN)
             {
-                isOperator();
-                m_Op = new AstNodeParen({m_Tokens[old].startPos, m_Tokens[m_TokenPos].endPos}, or_ops, m_OpType);
+                Pos opos = m_TokenPos - 1;
+                if (isOperator()) {
+                    opos++;
+                }
+                // isOperator();
+                m_Op = new AstNodeParen({m_Tokens[old].startPos, m_Tokens[opos].endPos}, or_ops, m_OpType);
                 return true;
             }
         }
@@ -126,9 +146,13 @@ namespace Regex
         Pos old = m_TokenPos;
         if (isEscape())
         {
-            isOperator();
+            if (isOperator()) {
+                m_Op = new AstNodeEscape({m_Tokens[old].startPos, m_Tokens[m_TokenPos-1].endPos}, m_EscapeType, m_OpType);
+            }
+            else {
+                m_Op = new AstNodeEscape({m_Tokens[old].startPos, m_Tokens[m_TokenPos].endPos}, m_EscapeType, m_OpType);
+            }
 
-            m_Op = new AstNodeEscape({m_Tokens[old].startPos, m_Tokens[m_TokenPos].endPos}, m_EscapeType, m_OpType);
             return true;
         }
 
@@ -145,9 +169,12 @@ namespace Regex
         if (m_Tokens[m_TokenPos].type == Token::TXT)
         {
             m_TokenPos++;
-            isOperator();
+            Pos opos = m_TokenPos - 1;
+            if (isOperator()) {
+                opos++;
+            }
 
-            m_Op = new AstNodeTxt({m_Tokens[old].startPos, m_Tokens[m_TokenPos].endPos}, m_Tokens[old].txt_value, m_OpType);
+            m_Op = new AstNodeTxt({m_Tokens[old].startPos, m_Tokens[opos].endPos}, m_Tokens[old].txt_value, m_OpType);
             return true;
         }
 
@@ -187,9 +214,13 @@ namespace Regex
                         if (m_Tokens[m_TokenPos].type == Token::RBRACK)
                         {
                             m_TokenPos++;
-                            isOperator();
+                            Pos opos = m_TokenPos - 1;
+                            if (isOperator()) {
+                                opos++;
+                            }
+                            // isOperator();
 
-                            m_Op = new AstNodeRange({m_Tokens[old].startPos, m_Tokens[m_TokenPos].endPos}, m_Tokens[old + 1].c_value, m_Tokens[old + 3].c_value, m_OpType);
+                            m_Op = new AstNodeRange({m_Tokens[old].startPos, m_Tokens[opos].endPos}, m_Tokens[old + 1].c_value, m_Tokens[old + 3].c_value, m_OpType);
                             return true;
                         }
                     }

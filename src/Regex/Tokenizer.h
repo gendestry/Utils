@@ -3,9 +3,9 @@
 #include <string>
 #include <vector>
 
-#include "token.h"
+#include "Token.h"
 
-namespace Regex
+namespace Utils::Regex
 {
 
     class Tokenizer

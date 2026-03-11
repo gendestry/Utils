@@ -5,7 +5,7 @@
 #include "Font.h"
 #include <sstream>
 
-namespace Utils::Text::Font {
+namespace Utils::Font {
     std::string colorByRGB(uint8_t r, uint8_t g, uint8_t b, bool fg)
     {
         std::stringstream ss;

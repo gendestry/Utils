@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
 #include <memory>
-#include "tokenizer.h"
-#include "syntax.h"
+#include "Tokenizer.h"
+#include "Syntax.h"
 
 #define DEBUG 0
 #define PRINT(stmt) \
@@ -11,9 +11,9 @@
         stmt        \
     }
 
-namespace Regex
+namespace Utils::Regex
 {
-    class Regex
+    class Matcher
     {
         bool m_Valid = true;
         unsigned int m_MaxMatch = 0;
@@ -24,12 +24,12 @@ namespace Regex
 
     public:
         // Regex() = delete;
-        Regex(std::string pattern);
-        Regex(const Regex &other);
-        Regex(Regex &&other) noexcept;
+        Matcher(std::string pattern);
+        Matcher(const Matcher &other);
+        Matcher(Matcher &&other) noexcept;
 
-        Regex &operator=(const Regex &other);
-        Regex &operator=(Regex &&other) noexcept;
+        Matcher &operator=(const Matcher &other);
+        Matcher &operator=(Matcher &&other) noexcept;
 
         void printTokens();
         void printAst();

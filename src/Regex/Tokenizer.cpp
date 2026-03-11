@@ -1,8 +1,8 @@
-#include "tokenizer.h"
+#include "Tokenizer.h"
 #include <iostream>
 #include <optional>
 
-using namespace Regex;
+using namespace Utils::Regex;
 
 void Tokenizer::tokenize(bool ignore_whitespace)
 {
