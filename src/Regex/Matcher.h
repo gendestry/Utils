@@ -3,6 +3,7 @@
 #include <memory>
 #include "Tokenizer.h"
 #include "Syntax.h"
+#include <optional>
 
 #define DEBUG 0
 #define PRINT(stmt) \
@@ -36,6 +37,7 @@ namespace Utils::Regex
         void prettyPrint();
 
         bool match(const std::string &text);
+        std::optional<unsigned int> findFirst(const std::string &text);
 
         inline unsigned int getMaxMatch() const
         {

@@ -22,11 +22,16 @@
 //     Fixture(uint32_t size) : Fragment(size) {}
 // };
 
+
+#include <string>
 int main() {
+    std::string text = "1234567";
+    std::cout << text.substr(1) << std::endl;
     // Regex::Regex t(R"(\T+)");
-    Utils::Regex::Matcher t("'1'*'23'");
-    if (t.match("111123")) {
-        std::cout << "Matched" << std::endl;
+    Utils::Regex::Matcher t("'1'+");
+    auto m = t.findFirst("aaaa111q");
+    if (m.has_value()) {
+        std::cout << std::to_string(m.value()) << " " << t.getMatch() << std::endl;
     }
 
     return 0;

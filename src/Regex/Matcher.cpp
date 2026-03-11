@@ -119,4 +119,48 @@ namespace Utils::Regex
         // m_MaxMatch = start;
         return start;
     }
+
+    std::optional<unsigned int> Matcher::findFirst(const std::string &text)
+    {
+        if (!m_Valid)
+            return {};
+
+        m_Match = "";
+        Pattern &pattern = m_Syntax->getPattern();
+        unsigned int start = 0;
+
+        std::string ctext = std::string(text);
+        unsigned int subs = 0;
+        Pos i = 0;
+        for (; i < pattern.size(); i++)
+        {
+            PRINT(std::cout << "\n   Matching: " << pattern[i]->toPrettyString() << " => ";)
+
+            auto [matched, current] = pattern[i]->match(ctext, start);
+            if (matched)
+            {
+                std::string matchedText = ctext.substr(start, current - start);
+                PRINT(std::cout << "Matched: '" << matchedText << "' ";)
+                m_Match += matchedText;
+                m_MaxMatch = std::max(m_MaxMatch, current);
+            }
+            else
+            {
+                PRINT(std::cout << "Not matched" << std::endl;)
+                if (ctext.size() == 1) {
+                    break;
+                }
+                ctext = ctext.substr(1);
+                subs++;
+                i--;
+            }
+            start = current;
+        }
+
+        if (i < pattern.size()) {
+            return {};
+        }
+        // m_MaxMatch = start;
+        return subs;
+    }
 };
