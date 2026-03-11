@@ -6,26 +6,11 @@
 // #include <print>
 #include <iostream>
 // using namespace Utils;
-// #include <random>
 #include "Regex/Matcher.h"
-
-// int getRandomInt(int min, int max) {
-//     std::random_device seed;
-//     std::mt19937 gen{seed()}; // seed the generator
-//     std::uniform_int_distribution<> dist{min, max}; // set min and max
-//     return dist(gen); // generate number
-// }
-//
-//
-// struct Fixture : public Fragment {
-//     Fixture() : Fragment(getRandomInt(1, 15)) {}
-//     Fixture(uint32_t size) : Fragment(size) {}
-// };
-
-
 #include <string>
+
+
 int main() {
-    // Regex::Regex t(R"(\T+)");
     Utils::Regex::Matcher t("('a''b'? | ('1'| '22'))+");
     if (t.match("a2")) {
         std::cout << t.getMatch() << std::endl;

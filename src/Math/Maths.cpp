@@ -5,6 +5,7 @@
 #include "Maths.h"
 #include <algorithm>
 #include <ranges>
+#include <random>
 
 namespace Utils::Maths
 {
@@ -63,5 +64,12 @@ std::vector<uint16_t> make_range(uint16_t start, uint16_t end)
     auto view = std::ranges::iota_view(start, end); // [start, end)
     return {view.begin(), view.end()};
 };
+
+int getRandomInt(int min, int max) {
+    std::random_device seed;
+    std::mt19937 gen{seed()}; // seed the generator
+    std::uniform_int_distribution<> dist{min, max}; // set min and max
+    return dist(gen); // generate number
+}
 
 }
