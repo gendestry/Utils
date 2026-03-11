@@ -1,0 +1,25 @@
+begin -> inter+
+
+inter -> paren
+inter -> ops
+
+ops -> escapeOP
+ops -> txtOp
+ops -> rangeOp
+
+paren -> lpar inter+ (or inter+)+ rpar operators?
+
+txtOp -> txt (operators)?
+
+rangeOp -> lbrack (\c | \C | \d) minus (\c | \C | \d) rbrack
+
+escapeOP -> escape (operators)?
+escape -> \c
+escape -> \C
+escape -> \T
+escape -> \d
+escape -> \n
+
+operators -> plus
+operators -> asterix
+operators -> question_mark
