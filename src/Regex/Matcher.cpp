@@ -121,12 +121,21 @@ namespace Utils::Regex
         return true;
     }
 
-    std::optional<unsigned int> Matcher::findFirst(const std::string &text)
-    {
+    std::optional<std::string> Matcher::find(const std::string &text) const {
+        auto info = findInfo(text);
+        if (info.has_value()) {
+            return info.value().match;
+        }
+
+        return {};
+    }
+
+    std::optional<Matcher::MatchInfo> Matcher::findInfo(const std::string &text) const {
         if (!m_Valid)
             return {};
 
-        m_Match = "";
+        std::string match;
+
         Pattern &pattern = m_Syntax->getPattern();
         unsigned int start = 0;
 
@@ -142,8 +151,7 @@ namespace Utils::Regex
             {
                 std::string matchedText = ctext.substr(start, current - start);
                 PRINT(std::cout << "Matched: '" << matchedText << "' ";)
-                m_Match += matchedText;
-                m_MaxMatch = std::max(m_MaxMatch, current);
+                match += matchedText;
             }
             else
             {
@@ -162,6 +170,55 @@ namespace Utils::Regex
             return {};
         }
         // m_MaxMatch = start;
-        return subs;
+        return MatchInfo{subs, match};
+    }
+
+
+    std::optional<std::vector<std::string>> Matcher::findAll(const std::string &text) const {
+        auto info = findAllInfo(text);
+
+        if (info.has_value()) {
+            std::vector<std::string> matches;
+            for (const auto& v : info.value()) {
+                matches.push_back(v.match);
+            }
+            return matches;
+        }
+
+        return {};
+    }
+
+    std::optional<std::vector<Matcher::MatchInfo>> Matcher::findAllInfo(const std::string &text) const {
+        if (!m_Valid)
+            return {};
+
+        std::vector<MatchInfo> matches;
+        std::string ctext = std::string(text);
+
+        unsigned int acc = 0;
+        while (true) {
+            std::optional<MatchInfo> match = findInfo(ctext);
+            if (match.has_value()) {
+                auto value = match.value();
+                acc += value.start;
+                value.start = acc;
+                matches.push_back(value);
+                acc += value.match.size();
+
+                ctext = text.substr(acc);
+                if (ctext.empty()) {
+                    break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+
+        if (!matches.empty()) {
+            return matches;
+        }
+
+        return {};
     }
 };

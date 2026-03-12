@@ -11,10 +11,19 @@
 
 
 int main() {
-    Utils::Regex::Matcher t("('a''b'? | ('1'| '22'))+");
-    if (t.match("a2")) {
-        std::cout << t.getMatch() << std::endl;
+    // Utils::Regex::Matcher t("('a''b'? | ('1'| '22'))+");
+    Utils::Regex::Matcher t("'qwe'('a' | 'b')?");
+    auto f = t.findAllInfo("qwea111111qwe23qweb");
+    if (f.has_value()) {
+        for (auto v : f.value()) {
+            std::cout << v.start << v.match << std::endl;
+            // std::cout << v << "\n";
+        }
+        // std::cout << f.value() << std::endl;
     }
+    // if (t.match("a2qwe")) {
+        // std::cout << t.getMatch() << std::endl;
+    // }
 
     return 0;
     // FragmentedStorage<Fragment, 100> storage;

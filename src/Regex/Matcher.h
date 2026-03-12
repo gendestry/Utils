@@ -23,6 +23,11 @@ namespace Utils::Regex
         std::unique_ptr<Tokenizer> m_Tokenizer;
         std::unique_ptr<Syntax> m_Syntax;
 
+        struct MatchInfo {
+            unsigned int start;
+            std::string match;
+        };
+
     public:
         // Regex() = delete;
         Matcher(std::string pattern);
@@ -37,7 +42,11 @@ namespace Utils::Regex
         void prettyPrint();
 
         bool match(const std::string &text);
-        std::optional<unsigned int> findFirst(const std::string &text);
+        std::optional<std::string> find(const std::string &text) const;
+        std::optional<MatchInfo> findInfo(const std::string &text) const;
+
+        std::optional<std::vector<std::string>> findAll(const std::string &text) const;
+        std::optional<std::vector<MatchInfo>> findAllInfo(const std::string &text) const;
 
         inline unsigned int getMaxMatch() const
         {
