@@ -5,7 +5,7 @@
 #include <string>
 #include <utility>
 
-#include "String.h"
+#include "Text/String.h"
 
 namespace Utils::Text {
     class Stream

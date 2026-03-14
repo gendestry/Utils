@@ -1,4 +1,4 @@
-#include "Colors.h"
+#include "Colors/Colors.h"
 #include <algorithm>
 #include <cmath>
 #include <format>
@@ -6,7 +6,7 @@
 #include <sstream>
 #include <print>
 
-#include "../Math/Curve.h"
+#include "Math/Curve.h"
 
 namespace Utils::Colors
 {

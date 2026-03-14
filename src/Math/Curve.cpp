@@ -1,10 +1,8 @@
-#include "Curve.h"
-
+#include "Math/Curve.h"
+#include <cmath>
 #include <iostream>
 
-#include "Maths.h"
-#include <math.h>
-#include <ostream>
+#include "Math/Maths.h"
 #include <stdexcept>
 
 namespace Utils::Maths {

@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include "RGB.h"
+#include "Colors/RGB.h"
 #include "HSV.h"
 
 

@@ -1,4 +1,4 @@
-#include "LineCounter.h"
+#include "Text/LineCounter.h"
 
 namespace Utils::Text
 {

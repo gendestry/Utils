@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
 #include <memory>
-#include "Engine/Tokenizer.h"
-#include "Engine/Syntax.h"
+#include "Regex/Engine/Tokenizer.h"
+#include "Regex/Engine/Syntax.h"
 #include <optional>
 
 #define DEBUG 0
