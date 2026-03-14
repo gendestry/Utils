@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 
-namespace Utils::Regex
+namespace Utils::Regex::Engine
 {
     struct Match
     {

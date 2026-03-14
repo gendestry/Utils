@@ -2,11 +2,11 @@
 #include <iostream>
 #include <optional>
 
-using namespace Utils::Regex;
+using namespace Utils::Regex::Engine;
 
 void Tokenizer::tokenize(bool ignore_whitespace)
 {
-    std::vector<Regex::Token> &tokens = m_Tokens;
+    std::vector<Token> &tokens = m_Tokens;
     std::string &pattern = m_Pattern;
     bool string = false;
     int start = 0;

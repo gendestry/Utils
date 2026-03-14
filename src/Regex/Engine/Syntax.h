@@ -3,7 +3,7 @@
 #include "Token.h"
 #include "AST.h"
 
-namespace Utils::Regex
+namespace Utils::Regex::Engine
 {
     using TokenArray = std::vector<Token>;
     using Pattern = std::vector<AstNodeOps *>;

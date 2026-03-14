@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-namespace Utils::Regex
+namespace Utils::Regex::Engine
 {
     class Token
     {

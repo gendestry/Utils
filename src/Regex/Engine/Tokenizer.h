@@ -5,7 +5,7 @@
 
 #include "Token.h"
 
-namespace Utils::Regex
+namespace Utils::Regex::Engine
 {
 
     class Tokenizer

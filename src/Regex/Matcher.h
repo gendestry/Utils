@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
 #include <memory>
-#include "Tokenizer.h"
-#include "Syntax.h"
+#include "Engine/Tokenizer.h"
+#include "Engine/Syntax.h"
 #include <optional>
 
 #define DEBUG 0
@@ -20,8 +20,8 @@ namespace Utils::Regex
         unsigned int m_MaxMatch = 0;
         std::string m_Pattern;
         std::string m_Match;
-        std::unique_ptr<Tokenizer> m_Tokenizer;
-        std::unique_ptr<Syntax> m_Syntax;
+        std::unique_ptr<Engine::Tokenizer> m_Tokenizer;
+        std::unique_ptr<Engine::Syntax> m_Syntax;
 
         struct MatchInfo {
             unsigned int start;

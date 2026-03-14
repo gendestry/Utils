@@ -4,7 +4,7 @@
 
 using namespace Utils;
 
-namespace Utils::Regex
+namespace Utils::Regex::Engine
 {
 
     unsigned int AstNodeParen::_match(std::string text, unsigned int st)

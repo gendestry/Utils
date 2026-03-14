@@ -8,11 +8,11 @@ namespace Utils::Regex
 {
     Matcher::Matcher(std::string pattern) : m_Pattern(pattern)
     {
-        m_Tokenizer = std::make_unique<Tokenizer>(pattern);
+        m_Tokenizer = std::make_unique<Engine::Tokenizer>(pattern);
         m_Tokenizer->tokenize();
         m_Tokenizer->print_tokens();
 
-        m_Syntax = std::make_unique<Syntax>(m_Tokenizer->get_tokens());
+        m_Syntax = std::make_unique<Engine::Syntax>(m_Tokenizer->get_tokens());
         m_Valid = m_Syntax->parse();
 
         if (!m_Valid)
@@ -24,8 +24,8 @@ namespace Utils::Regex
     Matcher::Matcher(const Matcher &other)
         : m_Pattern(other.m_Pattern),
           m_Valid(other.m_Valid),
-          m_Tokenizer(std::make_unique<Tokenizer>(*other.m_Tokenizer)),
-          m_Syntax(std::make_unique<Syntax>(*other.m_Syntax))
+          m_Tokenizer(std::make_unique<Engine::Tokenizer>(*other.m_Tokenizer)),
+          m_Syntax(std::make_unique<Engine::Syntax>(*other.m_Syntax))
     {
     }
 
@@ -44,8 +44,8 @@ namespace Utils::Regex
         {
             m_Pattern = other.m_Pattern;
             m_Valid = other.m_Valid;
-            m_Tokenizer = std::make_unique<Tokenizer>(*other.m_Tokenizer);
-            m_Syntax = std::make_unique<Syntax>(*other.m_Syntax);
+            m_Tokenizer = std::make_unique<Engine::Tokenizer>(*other.m_Tokenizer);
+            m_Syntax = std::make_unique<Engine::Syntax>(*other.m_Syntax);
         }
 
         return *this;
@@ -93,10 +93,10 @@ namespace Utils::Regex
             return false;
 
         m_Match = "";
-        Pattern &pattern = m_Syntax->getPattern();
+        Engine::Pattern &pattern = m_Syntax->getPattern();
         unsigned int start = 0;
 
-        for (Pos i = 0; i < pattern.size(); i++)
+        for (Engine::Pos i = 0; i < pattern.size(); i++)
         {
             PRINT(std::cout << "\n   Matching: " << pattern[i]->toPrettyString() << " => ";)
 
@@ -136,12 +136,12 @@ namespace Utils::Regex
 
         std::string match;
 
-        Pattern &pattern = m_Syntax->getPattern();
+        Engine::Pattern &pattern = m_Syntax->getPattern();
         unsigned int start = 0;
 
         std::string ctext = std::string(text);
         unsigned int subs = 0;
-        Pos i = 0;
+        Engine::Pos i = 0;
         for (; i < pattern.size(); i++)
         {
             PRINT(std::cout << "\n   Matching: " << pattern[i]->toPrettyString() << " => ";)

@@ -1,7 +1,7 @@
 #include "Syntax.h"
 #include <iostream>
 
-namespace Utils::Regex
+namespace Utils::Regex::Engine
 {
     bool Syntax::parse()
     {
