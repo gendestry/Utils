@@ -5,7 +5,7 @@
 #include <string>
 #include <utility>
 
-#include "Text/String.h"
+#include "String.h"
 
 namespace Utils::Text {
     class Stream
@@ -38,15 +38,15 @@ namespace Utils::Text {
             ss << msg;
         }
 
-        static std::string pad(uint32_t n, std::string by)
-        {
-            Stream s;
-            for(uint32_t i = 0; i < n; i++)
-            {
-                s << by;
-            }
-
-            return s.end();
-        }
+        // static std::string pad(uint32_t n, std::string by)
+        // {
+        //     Stream s;
+        //     for(uint32_t i = 0; i < n; i++)
+        //     {
+        //         s << by;
+        //     }
+        //
+        //     return s.end();
+        // }
     };
 }

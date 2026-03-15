@@ -1,23 +1,22 @@
 #include <iostream>
 #include "Regex/Matcher.h"
-#include "Text/Font.h"
+#include "../../include/Colors/Font.h"
 
 using namespace Utils;
 
 namespace Utils::Regex
 {
-    Matcher::Matcher(std::string pattern) : m_Pattern(pattern)
+    Matcher::Matcher(const std::string& pattern) : m_Pattern(pattern)
     {
         m_Tokenizer = std::make_unique<Engine::Tokenizer>(pattern);
         m_Tokenizer->tokenize();
-        m_Tokenizer->print_tokens();
 
         m_Syntax = std::make_unique<Engine::Syntax>(m_Tokenizer->get_tokens());
         m_Valid = m_Syntax->parse();
 
         if (!m_Valid)
         {
-            std::cout << "Error: invalid regex syntax" << std::endl;
+            throw std::runtime_error("Error: invalid regex syntax");
         }
     }
 
@@ -64,49 +63,30 @@ namespace Utils::Regex
         return *this;
     }
 
-    void Matcher::printTokens()
+    const std::string &Matcher::getPattern() const
     {
-        m_Tokenizer->print_tokens();
+        return m_Pattern;
     }
 
-    void Matcher::printAst()
-    {
-        if (m_Valid)
-            m_Syntax->printAst();
-    }
-
-    void Matcher::prettyPrint()
-    {
-        if (m_Valid)
-        {
-            for (auto &p : m_Syntax->getPattern())
-            {
-                std::cout << p->toPrettyString();
-            }
-            std::cout << std::endl;
-        }
-    }
-
-    bool Matcher::match(const std::string &text)
+    bool Matcher::match(const std::string &text) const
     {
         if (!m_Valid)
             return false;
 
-        m_Match = "";
+        std::string match;
         Engine::Pattern &pattern = m_Syntax->getPattern();
         unsigned int start = 0;
 
-        for (Engine::Pos i = 0; i < pattern.size(); i++)
+        for (auto & i : pattern)
         {
-            PRINT(std::cout << "\n   Matching: " << pattern[i]->toPrettyString() << " => ";)
+            PRINT(std::cout << "\n   Matching: " << i->toPrettyString() << " => ";)
 
-            auto [matched, current] = pattern[i]->match(text, start);
+            auto [matched, current] = i->match(text, start);
             if (matched)
             {
-                std::string matchedText = text.substr(start, current - start);
+                const std::string matchedText = text.substr(start, current - start);
                 PRINT(std::cout << "Matched: '" << matchedText << "' ";)
-                m_Match += matchedText;
-                m_MaxMatch = std::max(m_MaxMatch, current);
+                match += matchedText;
             }
             else
             {
@@ -116,14 +96,11 @@ namespace Utils::Regex
             start = current;
         }
 
-        // m_MaxMatch = start;
-        // return start;
-        return true;
+        return match.size() == text.size();
     }
 
     std::optional<std::string> Matcher::find(const std::string &text) const {
-        auto info = findInfo(text);
-        if (info.has_value()) {
+        if (auto info = findInfo(text); info.has_value()) {
             return info.value().match;
         }
 
@@ -174,11 +151,11 @@ namespace Utils::Regex
     }
 
 
-    std::optional<std::vector<std::string>> Matcher::findAll(const std::string &text) const {
+    std::optional<std::list<std::string>> Matcher::findAll(const std::string &text) {
         auto info = findAllInfo(text);
 
         if (info.has_value()) {
-            std::vector<std::string> matches;
+            std::list<std::string> matches;
             for (const auto& v : info.value()) {
                 matches.push_back(v.match);
             }
@@ -188,18 +165,23 @@ namespace Utils::Regex
         return {};
     }
 
-    std::optional<std::vector<Matcher::MatchInfo>> Matcher::findAllInfo(const std::string &text) const {
+    std::optional<std::list<Matcher::MatchInfo>> Matcher::findAllInfo(const std::string &text) {
         if (!m_Valid)
             return {};
 
-        std::vector<MatchInfo> matches;
-        std::string ctext = std::string(text);
+        lastMaxLength = 0;
+
+        std::list<MatchInfo> matches;
+        auto ctext = std::string(text);
 
         unsigned int acc = 0;
         while (true) {
-            std::optional<MatchInfo> match = findInfo(ctext);
+            auto match = findInfo(ctext);
             if (match.has_value()) {
                 auto value = match.value();
+                if (lastMaxLength < value.match.size()) {
+                    lastMaxLength = value.match.size();
+                }
                 acc += value.start;
                 value.start = acc;
                 matches.push_back(value);
@@ -220,5 +202,28 @@ namespace Utils::Regex
         }
 
         return {};
+    }
+
+    void Matcher::printTokens() const
+    {
+        m_Tokenizer->print_tokens();
+    }
+
+    void Matcher::printAst() const
+    {
+        if (m_Valid)
+            m_Syntax->printAst();
+    }
+
+    void Matcher::prettyPrint() const
+    {
+        if (m_Valid)
+        {
+            for (auto &p : m_Syntax->getPattern())
+            {
+                std::cout << p->toPrettyString();
+            }
+            std::cout << std::endl;
+        }
     }
 };

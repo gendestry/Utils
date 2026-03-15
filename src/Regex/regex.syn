@@ -23,3 +23,30 @@ escape -> \n
 operators -> plus
 operators -> asterix
 operators -> question_mark
+
+
+
+
+begin -> inter+
+
+inter -> ops operators?
+
+ops -> paren
+ops -> escape
+ops -> txt
+ops -> range
+
+paren -> lpar inter+ (or inter+)+ rpar
+txt -> apostrophe ... apostrophe
+range -> lbrack (\c | \C | \d) minus (\c | \C | \d) rbrack
+
+escape -> \c
+escape -> \C
+escape -> \T
+escape -> \d
+escape -> \n
+
+operators -> plus
+operators -> asterix
+operators -> question_mark
+

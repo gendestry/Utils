@@ -1,8 +1,7 @@
 #pragma once
 #include <cstdint>
-#include <string>
 #include <vector>
-#include "Colors/RGB.h"
+#include "RGB.h"
 #include "HSV.h"
 
 

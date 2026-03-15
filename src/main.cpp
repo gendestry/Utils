@@ -4,24 +4,26 @@
 
 // #include "Storage/FragmentedStorage.h"
 // #include <print>
-#include <iostream>
 #include "Regex/Matcher.h"
+#include "Logging/Logger.h"
 #include <string>
 
 int main() {
+    Utils::Logger logger("Main");
+    logger.setLoggerLevel(Utils::Logger::DEBUGGING);
     // Utils::Regex::Matcher t("('a''b'? | ('1'| '22'))+");
-    Utils::Regex::Matcher t("'qwe'('a' | 'b')?");
-    auto f = t.findAllInfo("qwea111111qwe23qweb");
+    Utils::Regex::Matcher t("'qwe'('a' | 'b+')?");
+    t.printTokens();
+    // Utils::Regex::Matcher t("('+386' | '0')");
+
+    std::string m = "qwea111111qwe23qweb+";
+    logger.println("Input: '{}'", m);
+    auto f = t.findAllInfo(m);
     if (f.has_value()) {
         for (auto v : f.value()) {
-            std::cout << v.start << v.match << std::endl;
-            // std::cout << v << "\n";
+            logger.debug("[{:2}-{:2}]'{}'", v.start, v.start + v.match.length() - 1, v.match);
         }
-        // std::cout << f.value() << std::endl;
     }
-    // if (t.match("a2qwe")) {
-        // std::cout << t.getMatch() << std::endl;
-    // }
 
     return 0;
     // FragmentedStorage<Fragment, 100> storage;

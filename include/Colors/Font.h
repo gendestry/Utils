@@ -4,7 +4,7 @@
 
 #pragma once
 #include <string>
-#include "Colors/RGB.h"
+#include "RGB.h"
 
 namespace Utils::Font
 {
@@ -19,6 +19,6 @@ namespace Utils::Font
     constexpr std::string colorDim = "\x1B[2m";
     constexpr std::string colorItalic = "\x1B[3m";
 
-    std::string colorByRGB(uint8_t r, uint8_t g, uint8_t b, bool fg);
-    std::string colorByRGB(const Colors::RGB& color, bool fg);
+    std::string colorByRGB(int r, int g, int b, bool fg = true);
+    std::string colorByRGB(const Colors::RGB& color, bool fg = true);
 }

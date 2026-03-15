@@ -1,23 +1,24 @@
 #pragma once
 #include <sstream>
 #include <format>
+#include <vector>
 #include <print>
 
-namespace Utils::Text
+namespace Utils
 {
-    // class String
-    // {
-        void concat(std::stringstream& ss) { }
-        
+    class String
+    {
+        static void concat(std::stringstream& ss) { }
+
         template<typename T, typename... Args> 
-        void concat(std::stringstream& ss, T&& value, Args&&... args)
+        static void concat(std::stringstream& ss, T&& value, Args&&... args)
         { 
             ss << std::forward<T>(value); 
             concat(ss, std::forward<Args>(args)...); 
         } 
-    // public:
+    public:
         template<typename... Args> 
-        std::string concat(Args&&... args)
+        static std::string concat(Args&&... args)
         { 
             std::stringstream ss; 
             concat(ss, std::forward<Args>(args)...); 
@@ -25,11 +26,13 @@ namespace Utils::Text
         } 
 
         template<typename... Args>
-        std::string format(const std::string& format, Args&&... args)
+        static std::string format(const std::string& format, Args&&... args)
         {
             return std::format(format, std::forward<Args>(args)...);
         }
-    // };
 
+        static std::vector<std::string> split(const std::string& str, const std::string& delimiter);
+        static std::string pad(uint32_t n, std::string by);
+    };
 
 }

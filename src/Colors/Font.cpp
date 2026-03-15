@@ -2,16 +2,22 @@
 // Created by bobi on 8. 03. 26.
 //
 
-#include "Text/Font.h"
+#include "Colors/Font.h"
 #include <sstream>
 
 namespace Utils::Font {
-    std::string colorByRGB(uint8_t r, uint8_t g, uint8_t b, bool fg)
+    std::string colorByRGB(int r, int g, int b, bool fg)
     {
         std::stringstream ss;
         ss << "\x1B[" << (fg ? 3 : 4) << "8;2;" << r << ";" << g << ";" << b << "m";
         return ss.str();
     }
+    // std::string colorByRGB(uint8_t r, uint8_t g, uint8_t b, bool fg)
+    // {
+    //     std::stringstream ss;
+    //     ss << "\x1B[" << (fg ? 3 : 4) << "8;2;" << r << ";" << g << ";" << b << "m";
+    //     return ss.str();
+    // }
 
     std::string colorByRGB(const Colors::RGB& color, bool fg)
     {

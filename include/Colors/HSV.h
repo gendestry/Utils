@@ -5,7 +5,6 @@
 #pragma once
 #include <string>
 #include <cstdint>
-#include <format>
 
 namespace Utils::Colors
 {
@@ -22,26 +21,11 @@ namespace Utils::Colors
 
         HSV() = default;
 
-        HSV(float hue, float saturation, float value)
-        {
-            h = hue;
-            s = saturation;
-            v = value;
-        }
+        HSV(float hue, float saturation, float value);
 
-        float& operator[](uint8_t index)
-        {
-            return hsv[index];
-        }
+        float& operator[](uint8_t index);
+        float operator[](uint8_t index) const;
 
-        float operator[](uint8_t index) const
-        {
-            return hsv[index];
-        }
-
-        [[nodiscard]] std::string toString() const
-        {
-            return std::format("Hue: {}, Sat: {}, Val {}\n", h, s, v);
-        }
+        [[nodiscard]] std::string toString() const;
     };
 }

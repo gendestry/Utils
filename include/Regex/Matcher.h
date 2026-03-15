@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 #include <string>
 #include <memory>
 #include "Regex/Engine/Tokenizer.h"
@@ -17,11 +18,10 @@ namespace Utils::Regex
     class Matcher
     {
         bool m_Valid = true;
-        unsigned int m_MaxMatch = 0;
         std::string m_Pattern;
-        std::string m_Match;
         std::unique_ptr<Engine::Tokenizer> m_Tokenizer;
         std::unique_ptr<Engine::Syntax> m_Syntax;
+
 
         struct MatchInfo {
             unsigned int start;
@@ -29,38 +29,28 @@ namespace Utils::Regex
         };
 
     public:
+        unsigned int lastMaxLength = 0;
+
         // Regex() = delete;
-        Matcher(std::string pattern);
+        Matcher(const std::string& pattern);
         Matcher(const Matcher &other);
         Matcher(Matcher &&other) noexcept;
 
         Matcher &operator=(const Matcher &other);
         Matcher &operator=(Matcher &&other) noexcept;
 
-        void printTokens();
-        void printAst();
-        void prettyPrint();
+        [[nodiscard]] const std::string &getPattern() const;
 
-        bool match(const std::string &text);
-        std::optional<std::string> find(const std::string &text) const;
-        std::optional<MatchInfo> findInfo(const std::string &text) const;
+        [[nodiscard]] bool match(const std::string &text) const;
+        [[nodiscard]] std::optional<std::string> find(const std::string &text) const;
+        [[nodiscard]] std::optional<MatchInfo> findInfo(const std::string &text) const;
 
-        std::optional<std::vector<std::string>> findAll(const std::string &text) const;
-        std::optional<std::vector<MatchInfo>> findAllInfo(const std::string &text) const;
+        [[nodiscard]] std::optional<std::list<std::string>> findAll(const std::string &text);
+        [[nodiscard]] std::optional<std::list<MatchInfo>> findAllInfo(const std::string &text);
 
-        inline unsigned int getMaxMatch() const
-        {
-            return m_Match.size();
-        }
+        void printTokens() const;
+        void printAst() const;
+        void prettyPrint() const;
 
-        inline const std::string &getPattern() const
-        {
-            return m_Pattern;
-        }
-
-        inline const std::string &getMatch() const
-        {
-            return m_Match;
-        }
     };
 };
