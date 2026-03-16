@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include "Text/String.h"
 
 namespace Utils::Regex::Engine
 {
@@ -10,14 +11,14 @@ namespace Utils::Regex::Engine
         unsigned int current = 0;
     };
 
-    class AstNodeOps
-    {
+    class AstNodeOps {
     public:
         enum OpType
         {
             PLUS,
             ASTERIX,
             QUESTION_MARK,
+            RANGE,
             NONE
         } m_OpType = NONE;
 
@@ -27,7 +28,15 @@ namespace Utils::Regex::Engine
             int end;
         } m_Location;
 
+        struct Range {
+            unsigned int start;
+            unsigned int end;
+        } m_Range;
+
         AstNodeOps(Location location) : m_Location(location) {}
+        AstNodeOps(Location location, unsigned int r1, unsigned int r2)
+            : m_Location(location), m_Range {r1, r2}
+        {}
 
         virtual std::string toString() = 0;
         virtual std::string toPrettyString() = 0;
@@ -46,6 +55,8 @@ namespace Utils::Regex::Engine
                 return "*";
             case QUESTION_MARK:
                 return "?";
+                case RANGE:
+                return Utils::String::concat("{",m_Range.start, ",",m_Range.end, "}");
             default:
                 return "";
             }

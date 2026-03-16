@@ -133,6 +133,7 @@ namespace Utils::Regex::Engine
                 }
                 // isOperator();
                 m_Op = new AstNodeParen({m_Tokens[old].startPos, m_Tokens[opos].endPos}, or_ops, m_OpType);
+                assignRange();
                 return true;
             }
         }
@@ -148,6 +149,8 @@ namespace Utils::Regex::Engine
         {
             if (isOperator()) {
                 m_Op = new AstNodeEscape({m_Tokens[old].startPos, m_Tokens[m_TokenPos-1].endPos}, m_EscapeType, m_OpType);
+                assignRange();
+
             }
             else {
                 m_Op = new AstNodeEscape({m_Tokens[old].startPos, m_Tokens[m_TokenPos].endPos}, m_EscapeType, m_OpType);
@@ -175,6 +178,8 @@ namespace Utils::Regex::Engine
             }
 
             m_Op = new AstNodeTxt({m_Tokens[old].startPos, m_Tokens[opos].endPos}, m_Tokens[old].txt_value, m_OpType);
+            assignRange();
+
             return true;
         }
 
@@ -220,7 +225,14 @@ namespace Utils::Regex::Engine
                             }
                             // isOperator();
 
-                            m_Op = new AstNodeRange({m_Tokens[old].startPos, m_Tokens[opos].endPos}, m_Tokens[old + 1].c_value, m_Tokens[old + 3].c_value, m_OpType);
+                            auto& t1 = m_Tokens[old + 1];
+                            auto& t2 = m_Tokens[old + 3];
+                            char v1 = t1.type == Token::C ? t1.c_value : static_cast<char>(t1.i_value + 48);
+                            char v2 = t2.type == Token::C ? t2.c_value :static_cast<char>(t2.i_value + 48);
+
+                            m_Op = new AstNodeRange({m_Tokens[old].startPos, m_Tokens[opos].endPos}, v1, v2, m_OpType);
+                            assignRange();
+
                             return true;
                         }
                     }
@@ -270,24 +282,44 @@ namespace Utils::Regex::Engine
             return false;
         }
 
-        switch (m_Tokens[m_TokenPos].type)
-        {
-        case Token::PLUS:
-            m_OpType = AstNodeOps::PLUS;
-            break;
-        case Token::ASTERIX:
-            m_OpType = AstNodeOps::ASTERIX;
-            break;
-        case Token::QUESTION_MARK:
-            m_OpType = AstNodeOps::QUESTION_MARK;
-            break;
-        default:
-            m_OpType = OpType::NONE;
-            return false;
+        switch (m_Tokens[m_TokenPos].type) {
+            case Token::PLUS:
+                m_OpType = AstNodeOps::PLUS;
+                m_TokenPos++;
+                return true;
+            case Token::ASTERIX:
+                m_OpType = AstNodeOps::ASTERIX;
+                m_TokenPos++;
+                return true;
+            case Token::QUESTION_MARK:
+                m_OpType = AstNodeOps::QUESTION_MARK;
+                m_TokenPos++;
+                return true;
+            case Token::LCURLY:
+                auto old = m_TokenPos;
+                m_TokenPos++;
+                if (m_Tokens[m_TokenPos].type == Token::N) {
+                    range1 = m_Tokens[m_TokenPos].i_value;
+                    m_TokenPos++;
+                    if (m_Tokens[m_TokenPos].type == Token::COMMA) {
+                        m_TokenPos++;
+                        if (m_Tokens[m_TokenPos].type == Token::N) {
+                            range2 = m_Tokens[m_TokenPos].i_value;
+                            m_TokenPos++;
+                            if (m_Tokens[m_TokenPos].type == Token::RCURLY) {
+                                m_OpType = AstNodeOps::RANGE;
+                                m_TokenPos++;
+                                return true;
+                            }
+                        }
+                    }
+                }
+                m_TokenPos = old;
+                return false;
         }
 
-        m_TokenPos++;
-        return true;
+        m_OpType = AstNodeOps::NONE;
+        return false;
     }
 
     void Syntax::printAst()

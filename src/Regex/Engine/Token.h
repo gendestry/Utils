@@ -159,6 +159,8 @@ namespace Utils::Regex::Engine
             // return type;
             if (this->type == Token::TXT)
                 return type + "<" + txt_value + ">";
+            if (this->type == Token::N)
+                return type + "<" + std::to_string(i_value) + ">";
 
             return type;
         }

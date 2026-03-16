@@ -1,5 +1,6 @@
 #include "AST.h"
-#include "../../../include/Colors/Font.h"
+#include "Colors/Font.h"
+#include "Text/Stream.h"
 #include <iostream>
 
 using namespace Utils;
@@ -43,16 +44,26 @@ namespace Utils::Regex::Engine
         unsigned int s = start;
         unsigned int m = _match(text, start);
 
-        switch (m_OpType)
-        {
-        case NONE:
-            return {m != s, m};
-        case PLUS:
-            if (m != s)
-            {
-                s = m;
-                m = _match(text, s);
+        switch (m_OpType) {
+            case NONE:
+                return {m != s, m};
+            case PLUS:
+                if (m != s)
+                {
+                    s = m;
+                    m = _match(text, s);
 
+                    while (m != s)
+                    {
+                        s = m;
+                        m = _match(text, s);
+                    }
+
+                    return {true, m};
+                }
+
+                return {false, s};
+            case ASTERIX:
                 while (m != s)
                 {
                     s = m;
@@ -60,20 +71,38 @@ namespace Utils::Regex::Engine
                 }
 
                 return {true, m};
+            case QUESTION_MARK:
+                return {true, m};
+            case RANGE:
+                auto r1 = m_Range.start;
+                auto r2 = m_Range.end;
+                int i = 0;
+                // min ammount
+                for (; i < r1; i++) {
+                    if (m != s) {
+                        s = m;
+                        m = _match(text, s);
+                    }
+                    else {
+                        return {false, s};
+                    }
+                }
+
+                while (m != s)
+                {
+                    s = m;
+                    m = _match(text, s);
+                    i++;
+                }
+
+                if (i <= r2)
+                {
+                    return {true, m};
+                }
+
+                return {false, s};
             }
 
-            return {false, s};
-        case ASTERIX:
-            while (m != s)
-            {
-                s = m;
-                m = _match(text, s);
-            }
-
-            return {true, m};
-        case QUESTION_MARK:
-            return {true, m};
-        }
 
         return {false, s};
     }
@@ -167,6 +196,34 @@ namespace Utils::Regex::Engine
             return {true, m};
         case QUESTION_MARK:
             return {true, m};
+        case RANGE:
+            auto r1 = m_Range.start;
+            auto r2 = m_Range.end;
+            int i = 0;
+            // min ammount
+            for (; i < r1; i++) {
+                if (m != s) {
+                    s = m;
+                    m = _match(text, s);
+                }
+                else {
+                    return {false, s};
+                }
+            }
+
+            while (m != s)
+            {
+                s = m;
+                m = _match(text, s);
+                i++;
+            }
+
+            if (i <= r2)
+            {
+                return {true, m};
+            }
+
+            return {false, s};
         }
 
         return {false, s};
@@ -225,7 +282,36 @@ namespace Utils::Regex::Engine
             return {true, m};
         case QUESTION_MARK:
             return {true, m};
+        case RANGE:
+            auto r1 = m_Range.start;
+            auto r2 = m_Range.end;
+            int i = 0;
+            // min ammount
+            for (; i < r1; i++) {
+                if (m != s) {
+                    s = m;
+                    m = _match(text, s);
+                }
+                else {
+                    return {false, s};
+                }
+            }
+
+            while (m != s)
+            {
+                s = m;
+                m = _match(text, s);
+                i++;
+            }
+
+            if (i <= r2)
+            {
+                return {true, m};
+            }
+
+            return {false, s};
         }
+
 
         return {false, s};
     }
@@ -276,6 +362,34 @@ namespace Utils::Regex::Engine
             return {true, m};
         case QUESTION_MARK:
             return {true, m};
+        case RANGE:
+            auto r1 = m_Range.start;
+            auto r2 = m_Range.end;
+            int i = 0;
+            // min ammount
+            for (; i < r1; i++) {
+                if (m != s) {
+                    s = m;
+                    m = _match(text, s);
+                }
+                else {
+                    return {false, s};
+                }
+            }
+
+            while (m != s)
+            {
+                s = m;
+                m = _match(text, s);
+                i++;
+            }
+
+            if (i <= r2)
+            {
+                return {true, m};
+            }
+
+            return {false, s};
         }
 
         return {false, s};
@@ -310,7 +424,10 @@ namespace Utils::Regex::Engine
 
     std::string AstNodeRange::toString()
     {
-        return "RangeNode[" + std::to_string(m_Start) + "-" + std::to_string(m_End) + "]" + toOpString();
+        Utils::Text::Stream s;
+        s << "RangeNode[" << m_Start << "-" << m_End << "]" << toOpString();
+        return s.end();
+        // return "RangeNode[" + (m_Start) + "-" + (m_End) + "]" + toOpString();
     }
 
     std::string AstNodeParen::toPrettyString()

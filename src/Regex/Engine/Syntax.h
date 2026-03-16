@@ -26,6 +26,17 @@ namespace Utils::Regex::Engine
         OpType m_OpType = OpType::NONE;
         EscapeType m_EscapeType = EscapeType::CHAR;
 
+        unsigned int range1 = 0, range2 = 0;
+
+        void assignRange() {
+            if (m_OpType == AstNodeOps::RANGE && m_Op != nullptr) {
+                m_Op->m_Range.start = range1;
+                m_Op->m_Range.end = range2;
+                range1 = 0;
+                range2 = 0;
+            }
+        }
+
     public:
         Syntax(const TokenArray &tokens) : m_Tokens(tokens)
         {

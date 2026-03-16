@@ -1,6 +1,7 @@
 #include "Tokenizer.h"
 #include <iostream>
 #include <optional>
+#include <sstream>
 
 using namespace Utils::Regex::Engine;
 
@@ -119,7 +120,19 @@ void Tokenizer::tokenize(bool ignore_whitespace)
             }
             else if (c >= '0' && c <= '9')
             {
-                tokens.push_back(Token(i, i, Token::N, c));
+                std::stringstream number;
+                auto prevpos = i;
+                for (; i < pattern.size(); i++) {
+                    c = pattern[i];
+                    if (c >= '0' && c <= '9') {
+                        number << c;
+                    }
+                    else {
+                        break;
+                    }
+                }
+
+                tokens.push_back(Token(prevpos, --i, Token::N, std::atoi(number.str().c_str())));
             }
         };
     }
