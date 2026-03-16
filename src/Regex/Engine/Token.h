@@ -36,6 +36,10 @@ namespace Utils::Regex::Engine
             RBRACK,
             LPAREN,
             RPAREN,
+            LCURLY,
+            RCURLY,
+            COMMA,
+
 
             WHITE_SPACE,
             TAB,
@@ -119,6 +123,15 @@ namespace Utils::Regex::Engine
                 break;
             case Token::RPAREN:
                 type = "RPAREN";
+                break;
+            case Token::LCURLY:
+                type = "LCURLY";
+                break;
+            case Token::RCURLY:
+                type = "RCURLY";
+                break;
+            case Token::COMMA:
+                type = "COMMA";
                 break;
             case Token::WHITE_SPACE:
                 type = "WHITE_SPACE";

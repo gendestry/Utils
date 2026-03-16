@@ -12,6 +12,10 @@ int main() {
     Utils::Logger logger("Main");
     logger.setLoggerLevel(Utils::Logger::DEBUGGING);
     // Utils::Regex::Matcher t("('a''b'? | ('1'| '22'))+");
+    Utils::Regex::Engine::Tokenizer tokenizer("'asd'{2,5}");
+    tokenizer.tokenize();
+    tokenizer.print_tokens();
+    return 0;
     Utils::Regex::Matcher t("'qwe'('a' | 'b+')?");
     t.printTokens();
     // Utils::Regex::Matcher t("('+386' | '0')");
