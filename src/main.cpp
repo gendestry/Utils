@@ -13,10 +13,6 @@ int main() {
     Utils::Logger logger("Main");
     logger.setLoggerLevel(Utils::Logger::DEBUGGING);
 
-    // Engine::Tokenizer tok("123+");
-    // tok.tokenize();
-    // tok.print_tokens();
-    // Utils::Regex::Matcher t("('a''b'? | ('1'| '22'))+");
     Utils::Regex::Matcher matcher("[a-z]{2,5}");
 
     matcher.printTokens();
