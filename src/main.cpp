@@ -7,9 +7,20 @@
 #include "Regex/Matcher.h"
 #include "Logging/Logger.h"
 #include <string>
+#include <print>
+
+template<typename T, typename U>
+T min(T first, U second)
+{
+    return first < second ? first : second;
+}
 
 using namespace Utils::Regex;
 int main() {
+    std::println("{}", min(1, 0.9f));
+    std::println("{}", min(0.9f, 1));
+
+    return 0;
     Utils::Logger logger("Main");
     logger.setLoggerLevel(Utils::Logger::DEBUGGING);
 
@@ -67,3 +78,12 @@ int main() {
     // storage.defragment();
     // std::cout << storage.fragmentsToString() << std::endl;
 }
+
+template<typename T>
+T min1(T a, T b)
+{
+    return a < b ? a : b;
+}
+
+
+// min(1, 0.9f)
