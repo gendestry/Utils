@@ -5,13 +5,14 @@
 #include "File/File.h"
 #include <fstream>
 
-using namespace Utils::File;
+namespace Utils::File
+{
+    std::expected<std::string, std::string> read(const std::string& path) {
+        std::ifstream file(path);
+        if (!file.is_open()) {
+            return std::unexpected("Could not open file " + path);
+        }
 
-std::string read(const std::string& path) {
-    std::ifstream file(path);
-    if (!file.is_open()) {
-        throw std::runtime_error("Could not open file");
+        return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>() );
     }
-
-    return {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>() };
 }

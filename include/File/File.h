@@ -1,10 +1,7 @@
-//
-// Created by bobi on 16. 03. 26.
-//
-
 #pragma once
+#include <expected>
 #include <string>
 
 namespace Utils::File {
-    std::string read(const std::string& path);
+    std::expected<std::string, std::string> read(const std::string& path);
 }

@@ -9,21 +9,29 @@
 #include <string>
 #include <print>
 
-template<typename T, typename U>
-T min(T first, U second)
-{
-    return first < second ? first : second;
-}
+#include "File/File.h"
 
 using namespace Utils::Regex;
 int main() {
-    std::println("{}", min(1, 0.9f));
-    std::println("{}", min(0.9f, 1));
-
-    return 0;
+    // std::println("{}", min(1, 0.9f));
+    // std::println("{}", min(0.9f, 1));
+    //
+    // return 0;
     Utils::Logger logger("Main");
     logger.setLoggerLevel(Utils::Logger::DEBUGGING);
 
+    auto x = Utils::File::read("1");
+    if (x.has_value()) {
+        logger.println(x.value());
+    }
+    else {
+        logger.println(x.error());
+    }
+
+    // Engine::Tokenizer tok("123+");
+    // tok.tokenize();
+    // tok.print_tokens();
+    // Utils::Regex::Matcher t("('a''b'? | ('1'| '22'))+");
     Utils::Regex::Matcher matcher("[a-z]{2,5}");
 
     matcher.printTokens();
