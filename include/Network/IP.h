@@ -15,10 +15,16 @@ namespace Utils::Network
         };
 
         IP() = default;
-        IP(std::string ip);
+        IP(const IP &other);
+        explicit IP(const std::string& ip);
 
-        uint8_t& operator[](uint8_t index);
+        IP& operator=(const std::string& ip);
 
-        std::string str() const;
+        void setIP(const std::string& ip);
+
+        [[nodiscard]] uint8_t& operator[](uint8_t index);
+
+        [[nodiscard]] std::string str() const;
+        [[nodiscard]] const char* cstr() const { return str().c_str(); }; // ne dela
     };
 }

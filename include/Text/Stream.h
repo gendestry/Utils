@@ -1,7 +1,5 @@
 #pragma once
-#include <cstdint>
 #include <format>
-#include <iosfwd>
 #include <string>
 #include <utility>
 
@@ -24,29 +22,18 @@ namespace Utils::Text {
             ss << String::concat(std::forward<Args>(args)...);
         }
 
+        template<typename... Args>
+        void addFormatted(const std::string& format, Args&&... args)
+        {
+            auto msg = std::vformat(format, std::make_format_args(args...));
+            ss << msg;
+        }
+
         std::string end()
         {
             std::string temp = ss.str();
             ss.clear();
             return temp;
         }
-
-        template<typename... Args>
-        void addFormatted(std::string format, Args&&... args)
-        {
-            auto msg = std::vformat(format, std::make_format_args(args...));
-            ss << msg;
-        }
-
-        // static std::string pad(uint32_t n, std::string by)
-        // {
-        //     Stream s;
-        //     for(uint32_t i = 0; i < n; i++)
-        //     {
-        //         s << by;
-        //     }
-        //
-        //     return s.end();
-        // }
     };
 }

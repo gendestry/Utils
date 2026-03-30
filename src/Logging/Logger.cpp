@@ -84,4 +84,14 @@ namespace Utils
     {
         return "[" + m_scope + getScopePadding() + "] ";
     }
+
+    void Logger::print(const std::string& text) const
+    {
+        std::print("{}{}", scopePadding(), text);
+    }
+
+    void Logger::println(const std::string& text) const
+    {
+        std::println("{}{}", scopePadding(), text);
+    }
 }

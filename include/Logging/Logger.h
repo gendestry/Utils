@@ -47,6 +47,9 @@ namespace Utils
         void toggleScope();
         std::string scopeStr() const;
 
+        void print(const std::string& text) const;
+        void println(const std::string& text) const;
+
         template<typename... Args>
         void print(const std::string& format, Args&&... args)
         {

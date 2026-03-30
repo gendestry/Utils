@@ -10,28 +10,38 @@
 #include <print>
 
 #include "File/File.h"
+#include "Network/Interfaces.h"
+#include "Network/SACN.h"
+#include "Text/Stream.h"
+#include <array>
+#include <chrono>
+#include <thread>
 
+using namespace Utils::Network;
 using namespace Utils::Regex;
 int main() {
-    // std::println("{}", min(1, 0.9f));
-    // std::println("{}", min(0.9f, 1));
-    //
-    // return 0;
     Utils::Logger logger("Main");
     logger.setLoggerLevel(Utils::Logger::DEBUGGING);
+    // auto x = Utils::File::read("1");
+    // if (x.has_value()) {
+    //     logger.println(x.value());
+    // }
+    // else {
+    //     logger.println(x.error());
+    // }
 
-    auto x = Utils::File::read("1");
-    if (x.has_value()) {
-        logger.println(x.value());
+    SacnSender sender;
+    sender.begin(8, IP("192.168.0.6"));
+    // uint8_t buff[512] = {255};
+    std::array<uint8_t, 512> packet;
+    for (auto i = 0; i < 512; i++) {
+        packet[i] = 255;
+        // buff[i] = 0;
     }
-    else {
-        logger.println(x.error());
-    }
+    // sender.setBuffer(buff.get());
+    // sender.send();
+    sender.send(packet);
 
-    // Engine::Tokenizer tok("123+");
-    // tok.tokenize();
-    // tok.print_tokens();
-    // Utils::Regex::Matcher t("('a''b'? | ('1'| '22'))+");
     Utils::Regex::Matcher matcher("[a-z]{2,5}");
 
     matcher.printTokens();
@@ -45,19 +55,6 @@ int main() {
             logger.debug("[{:2}-{:2}]'{}'", v.start, v.start + v.match.length() - 1, v.match);
         }
     }
-    return 0;
-    // Utils::Regex::Matcher t("'qwe'('a' | 'b+')?");
-    // t.printTokens();
-    // Utils::Regex::Matcher t("('+386' | '0')");
-
-    // std::string m = "qwea111111qwe23qweb+";
-    // logger.println("Input: '{}'", m);
-    // auto f = t.findAllInfo(m);
-    // if (f.has_value()) {
-    //     for (auto v : f.value()) {
-    //         logger.debug("[{:2}-{:2}]'{}'", v.start, v.start + v.match.length() - 1, v.match);
-    //     }
-    // }
 
     return 0;
     // FragmentedStorage<Fragment, 100> storage;
@@ -86,12 +83,3 @@ int main() {
     // storage.defragment();
     // std::cout << storage.fragmentsToString() << std::endl;
 }
-
-template<typename T>
-T min1(T a, T b)
-{
-    return a < b ? a : b;
-}
-
-
-// min(1, 0.9f)
