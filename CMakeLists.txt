@@ -17,17 +17,29 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Collect source files
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
-# Define the executable
-add_executable(${PROJECT_NAME} ${SOURCES})
 
-# target_link_libraries(${PROJECT_NAME}
-#         PRIVATE fmt::fmt asio::asio magic_enum::magic_enum
-# )
+add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
-# Attach include directories to the target (after it's created)
 target_include_directories(${PROJECT_NAME}
         PUBLIC
         include
         PRIVATE
         ${PROJECT_SOURCE_DIR}/src
 )
+
+# Define the executable
+add_executable(${PROJECT_NAME}_lulcek ${CMAKE_CURRENT_SOURCE_DIR}/examples/lulcek/main.cpp)
+
+# target_link_libraries(${PROJECT_NAME}
+#         PRIVATE fmt::fmt asio::asio magic_enum::magic_enum
+# )
+
+# Attach include directories to the target (after it's created)
+target_include_directories(${PROJECT_NAME}_lulcek
+        PUBLIC
+        include
+        PRIVATE
+        ${PROJECT_SOURCE_DIR}/src
+)
+
+target_link_libraries(${PROJECT_NAME}_lulcek PRIVATE ${PROJECT_NAME})
