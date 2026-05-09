@@ -2,7 +2,7 @@
 // Created by bobi on 8. 03. 26.
 //
 
-#include "../../include/Math/Maths.h"
+#include "Utils/Math/Maths.h"
 #include <algorithm>
 #include <ranges>
 #include <random>

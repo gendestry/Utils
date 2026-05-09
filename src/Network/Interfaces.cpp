@@ -2,7 +2,7 @@
 // Created by bobi on 7. 02. 26.
 //
 
-#include "Network/Interfaces.h"
+#include "Utils/Network/Interfaces.h"
 #include <ifaddrs.h>
 #include <arpa/inet.h>
 #include <cstring>

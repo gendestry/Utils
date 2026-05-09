@@ -1,6 +1,6 @@
 #include <iostream>
-#include "Regex/Matcher.h"
-#include "../../include/Colors/Font.h"
+#include "Utils/Regex/Matcher.h"
+#include "Utils/Colors/Font.h"
 
 using namespace Utils;
 

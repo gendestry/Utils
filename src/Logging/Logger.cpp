@@ -2,8 +2,8 @@
 // Created by bobi on 16. 03. 26.
 //
 
-#include "Logging/Logger.h"
-#include "Text/Stream.h"
+#include "Utils/Logging/Logger.h"
+#include "Utils/Text/Stream.h"
 
 namespace Utils
 {

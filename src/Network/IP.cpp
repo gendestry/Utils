@@ -1,5 +1,5 @@
-#include "Network/IP.h"
-#include "Text/Stream.h"
+#include "Utils/Network/IP.h"
+#include "Utils/Text/Stream.h"
 #include <format>
 #include <exception>
 

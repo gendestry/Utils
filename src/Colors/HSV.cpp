@@ -2,7 +2,7 @@
 // Created by bobi on 15. 03. 26.
 //
 
-#include "Colors/HSV.h"
+#include "Utils/Colors/HSV.h"
 #include <format>
 
 using namespace Utils::Colors;

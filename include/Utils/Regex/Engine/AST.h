@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
-#include "Text/String.h"
+#include "Utils/Text/String.h"
 
 namespace Utils::Regex::Engine
 {

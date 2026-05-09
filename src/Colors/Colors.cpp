@@ -1,12 +1,9 @@
-#include "Colors/Colors.h"
+#include "Utils/Colors/Colors.h"
 #include <algorithm>
 #include <cmath>
 #include <format>
-#include <iostream>
-#include <sstream>
-#include <print>
 
-#include "Math/Curve.h"
+#include "Utils/Math/Curve.h"
 
 namespace Utils::Colors
 {

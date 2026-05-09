@@ -1,6 +1,6 @@
-#include "AST.h"
-#include "Colors/Font.h"
-#include "Text/Stream.h"
+#include "../../../include/Utils/Regex/Engine/AST.h"
+#include "Utils/Colors/Font.h"
+#include "Utils/Text/Stream.h"
 #include <iostream>
 
 using namespace Utils;

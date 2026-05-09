@@ -2,7 +2,7 @@
 // Created by bobi on 15. 03. 26.
 //
 
-#include "Colors/RGB.h"
+#include "Utils/Colors/RGB.h"
 #include <format>
 
 using namespace Utils::Colors;

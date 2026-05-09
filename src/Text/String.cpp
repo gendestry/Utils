@@ -2,7 +2,7 @@
 // Created by bobi on 16. 03. 26.
 //
 
-#include "Text/String.h"
+#include "Utils/Text/String.h"
 #include <sstream>
 
 std::vector<std::string> Utils::String::split(const std::string& str, const std::string& delimiter) {

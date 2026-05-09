@@ -2,8 +2,8 @@
 #include <list>
 #include <string>
 #include <memory>
-#include "Regex/Engine/Tokenizer.h"
-#include "Regex/Engine/Syntax.h"
+#include "Utils/Regex/Engine/Tokenizer.h"
+#include "Utils/Regex/Engine/Syntax.h"
 #include <optional>
 
 #define DEBUG 0
