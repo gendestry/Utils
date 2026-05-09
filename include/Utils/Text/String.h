@@ -34,6 +34,7 @@ namespace Utils
 
         static bool isInt(const std::string& s);
         static std::vector<std::string> split(const std::string& str, const std::string& delimiter);
+        static std::string normalize_spaces(const std::string& input);
         static std::string pad(uint32_t n, std::string by);
     };
 

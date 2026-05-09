@@ -76,6 +76,49 @@ std::vector<std::string> Utils::String::split(
     return result;
 }
 
+std::string Utils::String::normalize_spaces(const std::string& input) {
+    std::string result;
+    result.reserve(input.size());
+
+    bool in_quotes = false;
+    bool prev_was_space = false;
+
+    for (size_t i = 0; i < input.size(); ++i) {
+        char c = input[i];
+
+        if (c == '"') {
+            in_quotes = !in_quotes;
+            result += c;
+            prev_was_space = false;
+            continue;
+        }
+
+        if (in_quotes) {
+            // inside quotes: copy everything exactly
+            result += c;
+            continue;
+        }
+
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+            // outside quotes: collapse whitespace
+            if (!prev_was_space) {
+                result += ' ';
+                prev_was_space = true;
+            }
+        } else {
+            result += c;
+            prev_was_space = false;
+        }
+    }
+
+    // optional: trim trailing space
+    if (!result.empty() && result.back() == ' ') {
+        result.pop_back();
+    }
+
+    return result;
+}
+
 std::string Utils::String::pad(uint32_t n, std::string by)
 {
     std::stringstream s;
