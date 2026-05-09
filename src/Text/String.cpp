@@ -5,6 +5,16 @@
 #include "Utils/Text/String.h"
 #include <sstream>
 #include <charconv>
+#include <algorithm>
+
+std::string Utils::String::strip(const std::string& input, const std::string& what) {
+    std::string result = input;
+    std::erase_if(result, [&](char c) {
+        return what.find(c) != std::string::npos;
+    });
+    return result;
+}
+
 
 bool Utils::String::isInt(const std::string& s) {
     int value;
@@ -16,17 +26,53 @@ bool Utils::String::isInt(const std::string& s) {
            ptr == s.data() + s.size();
 }
 
-std::vector<std::string> Utils::String::split(const std::string& str, const std::string& delimiter) {
-    std::vector<std::string> result;
-    size_t start = 0;
-    size_t end;
+// std::vector<std::string> Utils::String::split(const std::string& str, const std::string& delimiter) {
+//     std::vector<std::string> result;
+//     size_t start = 0;
+//     size_t end;
+//
+//     while ((end = str.find(delimiter, start)) != std::string::npos) {
+//         result.push_back(str.substr(start, end - start));
+//         start = end + delimiter.length();
+//     }
+//
+//     result.push_back(str.substr(start));
+//     return result;
+// }
 
-    while ((end = str.find(delimiter, start)) != std::string::npos) {
-        result.push_back(str.substr(start, end - start));
-        start = end + delimiter.length();
+
+std::vector<std::string> Utils::String::split(
+    const std::string& input,
+    const std::string& delimiters
+) {
+    std::vector<std::string> result;
+    std::string current;
+    bool in_quotes = false;
+
+    auto is_delim = [&](char c) {
+        return delimiters.find(c) != std::string::npos;
+    };
+
+    for (char c : input) {
+        if (c == '"') {
+            in_quotes = !in_quotes;
+            continue; // strip quotes
+        }
+
+        if (is_delim(c) && !in_quotes) {
+            if (!current.empty()) {
+                result.push_back(current);
+                current.clear();
+            }
+        } else {
+            current += c;
+        }
     }
 
-    result.push_back(str.substr(start));
+    if (!current.empty()) {
+        result.push_back(current);
+    }
+
     return result;
 }
 

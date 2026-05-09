@@ -30,6 +30,8 @@ namespace Utils
             return std::vformat(fmt, std::make_format_args(args...));
         }
 
+        static std::string strip(const std::string& input, const std::string& what);
+
         static bool isInt(const std::string& s);
         static std::vector<std::string> split(const std::string& str, const std::string& delimiter);
         static std::string pad(uint32_t n, std::string by);
