@@ -4,6 +4,17 @@
 
 #include "Utils/Text/String.h"
 #include <sstream>
+#include <charconv>
+
+bool Utils::String::isInt(const std::string& s) {
+    int value;
+
+    auto [ptr, ec] =
+        std::from_chars(s.data(), s.data() + s.size(), value);
+
+    return ec == std::errc() &&
+           ptr == s.data() + s.size();
+}
 
 std::vector<std::string> Utils::String::split(const std::string& str, const std::string& delimiter) {
     std::vector<std::string> result;

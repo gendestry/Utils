@@ -22,14 +22,15 @@ namespace Utils
             std::stringstream ss; 
             concat(ss, std::forward<Args>(args)...); 
             return ss.str(); 
-        } 
-
-        template<typename... Args>
-        static std::string format(const std::string& format, Args&&... args)
-        {
-            return std::format(format, std::forward<Args>(args)...);
         }
 
+        template<typename... Args>
+        static std::string format(std::string_view fmt, Args&&... args)
+        {
+            return std::vformat(fmt, std::make_format_args(args...));
+        }
+
+        static bool isInt(const std::string& s);
         static std::vector<std::string> split(const std::string& str, const std::string& delimiter);
         static std::string pad(uint32_t n, std::string by);
     };

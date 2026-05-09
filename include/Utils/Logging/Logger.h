@@ -51,14 +51,14 @@ namespace Utils
         void println(const std::string& text) const;
 
         template<typename... Args>
-        void print(const std::string& format, Args&&... args)
+        void print(const std::string& format, Args&&... args) const
         {
             auto msg = std::vformat(format, std::make_format_args(args...));
             std::print("{}{}", scopePadding(), msg);
         }
 
         template<typename... Args>
-        void println(const std::string& format, Args&&... args)
+        void println(const std::string& format, Args&&... args) const
         {
             auto msg = std::vformat(format, std::make_format_args(args...));
             std::println("{}{}", scopePadding(), msg);
@@ -67,7 +67,7 @@ namespace Utils
         template<typename... Args>
         void printColor(const std::string& color,
                         const std::string& format,
-                        Args&&... args)
+                        Args&&... args) const
         {
             auto msg = std::vformat(format, std::make_format_args(args...));
             std::print("{}{}{}{}", scopePadding(), color, msg, Font::colorReset);
@@ -76,15 +76,14 @@ namespace Utils
         template<typename... Args>
         void printlnColor(const std::string& color,
                           const std::string& format,
-                          Args&&... args)
+                          Args&&... args) const
         {
             auto msg = std::vformat(format, std::make_format_args(args...));
             std::println("{}{}{}{}", scopePadding(), color, msg, Font::colorReset);
         }
 
         template<typename... Args>
-        void debug(const std::string& format,
-                    Args&&... args)
+        void debug(const std::string& format, Args&&... args) const
         {
             const Level level = m_level == NOTSET ? s_level : m_level;
             if(level <= Level::DEBUGGING)
@@ -95,8 +94,7 @@ namespace Utils
         }
 
         template<typename... Args>
-        void error(const std::string& format,
-                    Args&&... args)
+        void error(const std::string& format, Args&&... args) const
         {
             auto msg = std::vformat(format, std::make_format_args(args...));
             std::println("{}{}{}{}", Font::colorRed, scopePadding(), msg, Font::colorReset);
