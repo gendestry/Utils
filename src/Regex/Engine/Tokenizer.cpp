@@ -106,6 +106,9 @@ void Tokenizer::tokenize(bool ignore_whitespace)
         case ',':
             tokens.push_back(Token(i, i, Token::COMMA));
             break;
+        case '!':
+            tokens.push_back(Token(i, i, Token::EXCLAMATION));
+            break;
         case '|':
             tokens.push_back(Token(i, i, Token::OR));
             break;

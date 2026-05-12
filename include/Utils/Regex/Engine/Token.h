@@ -39,6 +39,7 @@ namespace Utils::Regex::Engine
             LCURLY,
             RCURLY,
             COMMA,
+            EXCLAMATION,
 
 
             WHITE_SPACE,
@@ -150,6 +151,9 @@ namespace Utils::Regex::Engine
                 break;
             case Token::N:
                 type = "N";
+                break;
+            case Token::EXCLAMATION:
+                type = "EXCLAMATION";
                 break;
             default:
                 type = "UNKNOWN";

@@ -4,6 +4,7 @@
 #include <memory>
 #include "Utils/Regex/Engine/Tokenizer.h"
 #include "Utils/Regex/Engine/Syntax.h"
+#include "Utils/Logging/Logger.h"
 #include <optional>
 
 #define DEBUG 0
@@ -17,15 +18,28 @@ namespace Utils::Regex
 {
     class Matcher
     {
+        Logger logger;
         bool m_Valid = true;
         std::string m_Pattern;
         std::unique_ptr<Engine::Tokenizer> m_Tokenizer;
         std::unique_ptr<Engine::Syntax> m_Syntax;
 
 
+        struct MatchData {
+
+        };
         struct MatchInfo {
             unsigned int start;
             std::string match;
+            std::string fullmatch;
+
+            std::vector<MatchInfo> groups;
+
+            MatchInfo(){}
+            MatchInfo(unsigned int start, std::string match)
+                : start(start), match(match) {}
+            MatchInfo(unsigned int start, std::string match, std::string fullmatch)
+                : start(start), match(match), fullmatch(fullmatch) {}
         };
 
     public:
@@ -42,6 +56,8 @@ namespace Utils::Regex
         [[nodiscard]] const std::string &getPattern() const;
 
         [[nodiscard]] bool match(const std::string &text) const;
+        [[nodiscard]] std::optional<MatchInfo> matchGroups(const std::string &text) const;
+
         [[nodiscard]] std::optional<std::string> find(const std::string &text) const;
         [[nodiscard]] std::optional<MatchInfo> findInfo(const std::string &text) const;
 

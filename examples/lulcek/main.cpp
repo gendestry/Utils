@@ -15,6 +15,7 @@
 // #include "Text/Stream.h"
 #include <array>
 #include <chrono>
+#include <iostream>
 #include <thread>
 
 // using namespace Utils::Network;
@@ -42,10 +43,36 @@ int main() {
     // sender.send();
     // sender.send(packet);
 
-    Utils::Regex::Matcher matcher("[a-z]{2,5}");
+    // Utils::Regex::Matcher matcher("{'qwe'}*");
+    // Utils::Regex::Matcher matcher(R"(!{'--'}{('"'\T+'"' | \T+)})");
+    // Utils::Regex::Matcher matcher(R"('--'?'setuniverse '{\d+}' '?{\d+}?)");
+    Utils::Regex::Matcher matcher(R"(('asd'{\d}))");
+    // Utils::Regex::Matcher matcher ("!{'--'}{[a-z]+}");
+    // Utils::Regex::Matcher matcher("!{'""'}'asd')+");
+    // Utils::Regex::Matcher matcher("('asd'('qwe' | '1'))+");
+    // Utils::Regex::Matcher matcher("{('a'|'b')+}'1'");
+    // Utils::Regex::Matcher matcher(R"(!{'--'}{\T+})");
 
     matcher.printTokens();
     matcher.printAst();
+    matcher.prettyPrint();
+
+    // auto m = matcher.matchGroups("asd1asd1");
+    auto m = matcher.matchGroups("asd1");
+    // auto x = matcher.matchGroups("asdfooasdfoo");
+    if (m.has_value()) {
+        auto v = m.value();
+        for (auto g : v.groups) {
+            std::cout << g.match << std::endl;
+        }
+    }
+    // std::cout << m.match << std::endl;
+    // for (auto g : m.groups) {
+        // for (auto g1 : g)
+            // std::cout << g.match << ", ";
+        // std::cout << std::endl;
+    // }
+    return 0;
 
     // std::string m = "aa";
     // logger.println("Input: '{}'", m);

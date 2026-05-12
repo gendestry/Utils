@@ -1,5 +1,12 @@
-#include "../../../include/Utils/Regex/Engine/Syntax.h"
+#include "Utils/Regex/Engine/Syntax.h"
 #include <iostream>
+
+#include "Utils/Regex/Engine/AST/AstNodeCapture.h"
+#include "Utils/Regex/Engine/AST/AstNodeEnclosure.h"
+#include "Utils/Regex/Engine/AST/AstNodeIgnore.h"
+#include "Utils/Regex/Engine/AST/AstNodeParen.h"
+#include "Utils/Regex/Engine/AST/AstNodeRange.h"
+#include "Utils/Regex/Engine/AST/AstNodeTxt.h"
 
 namespace Utils::Regex::Engine
 {
@@ -49,6 +56,18 @@ namespace Utils::Regex::Engine
             // std::cout << "Range: " << old << ", " << m_TokenPos << std::endl;
             return true;
         }
+        else if (isCapture())
+        {
+            m_AstTree.push_back(m_Op);
+            // std::cout << "Range: " << old << ", " << m_TokenPos << std::endl;
+            return true;
+        }
+        else if (isNotCapture())
+        {
+            m_AstTree.push_back(m_Op);
+            // std::cout << "Range: " << old << ", " << m_TokenPos << std::endl;
+            return true;
+        }
 
         // if (m_TokenPos+1 < m_Tokens.size()) {
         //     m_TokenPos++;
@@ -63,6 +82,68 @@ namespace Utils::Regex::Engine
         return false;
     }
 
+    bool Syntax::isCapture() {
+        Pos old = m_TokenPos;
+        std::vector<AstNodeOps *> ops;
+        //
+        if (m_Tokens[m_TokenPos].type == Token::LCURLY)
+        {
+            m_TokenPos++;
+            if (isParen() || isEscapeOp() || isTxtOp() || isRangeOp() || isCapture() || isNotCapture()) {
+                ops.push_back(m_Op);
+                while (isParen() || isEscapeOp() || isTxtOp() || isRangeOp() || isCapture() || isNotCapture())
+                {
+                    ops.push_back(m_Op);
+                }
+                if (m_Tokens[m_TokenPos++].type == Token::RCURLY)
+                {
+                    Pos opos = m_TokenPos - 1;
+                    if (isOperator()) {
+                        opos++;
+                    }
+                    m_Op = new AstNodeCapture({m_Tokens[old].startPos, m_Tokens[opos].endPos}, ops, m_OpType);
+                    return true;
+                }
+
+            }
+        }
+
+        m_TokenPos = old;
+        return false;
+    }
+
+    bool Syntax::isNotCapture() {
+        Pos old = m_TokenPos;
+        std::vector<AstNodeOps *> ops;
+        //
+        if (m_Tokens[m_TokenPos++].type == Token::EXCLAMATION) {
+            if (m_Tokens[m_TokenPos++].type == Token::LCURLY)
+            {
+                if (isParen() || isEscapeOp() || isTxtOp() || isRangeOp() || isCapture() || isNotCapture()) {
+                    ops.push_back(m_Op);
+                    while (isParen() || isEscapeOp() || isTxtOp() || isRangeOp() || isCapture() || isNotCapture())
+                    {
+                        ops.push_back(m_Op);
+                    }
+                    if (m_Tokens[m_TokenPos++].type == Token::RCURLY)
+                    {
+                        Pos opos = m_TokenPos - 1;
+                        if (isOperator()) {
+                            opos++;
+                        }
+                        m_Op = new AstNodeIgnore({m_Tokens[old].startPos, m_Tokens[opos].endPos}, ops, m_OpType);
+                        return true;
+                    }
+
+                }
+            }
+        }
+
+        m_TokenPos = old;
+        return false;
+    }
+
+
     bool Syntax::isParen()
     {
         std::vector<std::vector<AstNodeOps *>> or_ops;
@@ -73,10 +154,10 @@ namespace Utils::Regex::Engine
             Pos old = m_TokenPos;
             if (m_Tokens[m_TokenPos++].type == Token::OR)
             {
-                if (isParen() || isEscapeOp() || isTxtOp() || isRangeOp())
+                if (isParen() || isEscapeOp() || isTxtOp() || isRangeOp() || isCapture() || isNotCapture())
                 {
                     ops.push_back(m_Op);
-                    while (isParen() || isEscapeOp() || isTxtOp() || isRangeOp())
+                    while (isParen() || isEscapeOp() || isTxtOp() || isRangeOp() || isCapture() || isNotCapture())
                     {
                         ops.push_back(m_Op);
                     }
@@ -97,10 +178,10 @@ namespace Utils::Regex::Engine
         {
             // lpar {inter+} (or inter+)+ rpar operators?
             m_TokenPos++;
-            if (isParen() || isEscapeOp() || isTxtOp() || isRangeOp())
+            if (isParen() || isEscapeOp() || isTxtOp() || isRangeOp() || isCapture() || isNotCapture())
             {
                 ops.push_back(m_Op);
-                while (isParen() || isEscapeOp() || isTxtOp() || isRangeOp())
+                while (isParen() || isEscapeOp() || isTxtOp() || isRangeOp() || isCapture() || isNotCapture())
                 {
                     ops.push_back(m_Op);
                 }
@@ -115,15 +196,20 @@ namespace Utils::Regex::Engine
             }
 
             // lpar inter+ {(or inter+)}+ rpar operators?
-            if (!isOr())
+            bool enclosure = false;
+            if (isOr())
             {
-                m_TokenPos = old;
-                return false;
+                while (isOr())
+                    ;
+                // m_TokenPos = old;
+                // return false;
+            }
+            else {
+                enclosure = true;
             }
 
             // lpar inter+ (or inter+){+} rpar operators?
-            while (isOr())
-                ;
+
 
             if (m_Tokens[m_TokenPos++].type == Token::RPAREN)
             {
@@ -132,7 +218,13 @@ namespace Utils::Regex::Engine
                     opos++;
                 }
                 // isOperator();
-                m_Op = new AstNodeParen({m_Tokens[old].startPos, m_Tokens[opos].endPos}, or_ops, m_OpType);
+                if (enclosure) {
+                    m_Op = new AstNodeEnclosure({m_Tokens[old].startPos, m_Tokens[opos].endPos}, or_ops[0], m_OpType);
+                }
+                else {
+                    m_Op = new AstNodeParen({m_Tokens[old].startPos, m_Tokens[opos].endPos}, or_ops, m_OpType);
+
+                }
                 assignRange();
                 return true;
             }

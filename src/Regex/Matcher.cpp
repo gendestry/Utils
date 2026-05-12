@@ -6,8 +6,9 @@ using namespace Utils;
 
 namespace Utils::Regex
 {
-    Matcher::Matcher(const std::string& pattern) : m_Pattern(pattern)
+    Matcher::Matcher(const std::string& pattern) : m_Pattern(pattern), logger("matcher")
     {
+        logger.setLoggerLevel(Logger::DEBUGGING);
         m_Tokenizer = std::make_unique<Engine::Tokenizer>(pattern);
         m_Tokenizer->tokenize();
 
@@ -24,7 +25,8 @@ namespace Utils::Regex
         : m_Pattern(other.m_Pattern),
           m_Valid(other.m_Valid),
           m_Tokenizer(std::make_unique<Engine::Tokenizer>(*other.m_Tokenizer)),
-          m_Syntax(std::make_unique<Engine::Syntax>(*other.m_Syntax))
+          m_Syntax(std::make_unique<Engine::Syntax>(*other.m_Syntax)),
+          logger("matcher")
     {
     }
 
@@ -32,7 +34,8 @@ namespace Utils::Regex
         : m_Pattern(std::move(other.m_Pattern)),
           m_Tokenizer(std::move(other.m_Tokenizer)),
           m_Syntax(std::move(other.m_Syntax)),
-          m_Valid(other.m_Valid)
+    m_Valid(other.m_Valid),
+    logger("matcher")
     {
     }
 
@@ -99,6 +102,69 @@ namespace Utils::Regex
         return match.size() == text.size();
     }
 
+    std::optional<Matcher::MatchInfo> Matcher::matchGroups(const std::string &text) const {
+        if (!m_Valid)
+            return {};
+
+        MatchInfo ret;
+
+        Engine::Pattern &patterns = m_Syntax->getPattern();
+        unsigned int start = 0;
+
+        std::string ctext = std::string(text);
+        unsigned int subs = 0;
+        Engine::Pos i = 0;
+        for (; i < patterns.size(); i++)
+        {
+            auto& pattern = patterns[i];
+            logger.debug("\nMatching: {} => ", pattern->toPrettyString());
+
+            auto [matched, current] = pattern->match(ctext, start, patterns.size()>1);
+            if (matched)
+            {
+                std::string matchedText = ctext.substr(start, current - start);
+                logger.debug("Matcher: '{}' ", matchedText);
+                if (matchedText.empty()) {
+                    continue;
+                }
+
+                if (pattern->shouldIgnore()) {
+                    // ret.groups[0].push_back(matchedText);
+                }
+                else if (pattern->shouldCapture()) {
+                    ret.groups.push_back(MatchInfo(start, matchedText));
+                    ret.match += matchedText;
+                }
+                else {
+                    ret.match += matchedText;
+                }
+                ret.fullmatch += matchedText;
+            }
+            else
+            {
+                logger.debug("Not matched");
+                // PRINT(std::cout << "Not matched" << std::endl;)
+                if (ctext.size() == 1) {
+                    break;
+                }
+                ctext = ctext.substr(1);
+                subs++;
+                i--;
+            }
+            start = current;
+        }
+
+        if (i < patterns.size()) {
+            return {};
+        }
+        // m_MaxMatch = start;
+        if (ret.fullmatch.size() != text.size())
+            return std::nullopt;
+
+        ret.start = subs;
+        return ret;
+    }
+
     std::optional<std::string> Matcher::find(const std::string &text) const {
         if (auto info = findInfo(text); info.has_value()) {
             return info.value().match;
@@ -113,17 +179,18 @@ namespace Utils::Regex
 
         std::string match;
 
-        Engine::Pattern &pattern = m_Syntax->getPattern();
+        Engine::Pattern &patterns = m_Syntax->getPattern();
         unsigned int start = 0;
 
         std::string ctext = std::string(text);
         unsigned int subs = 0;
         Engine::Pos i = 0;
-        for (; i < pattern.size(); i++)
+        for (; i < patterns.size(); i++)
         {
-            PRINT(std::cout << "\n   Matching: " << pattern[i]->toPrettyString() << " => ";)
+            auto& pattern = patterns[i];
+            PRINT(std::cout << "\n   Matching: " << pattern->toPrettyString() << " => ";)
 
-            auto [matched, current] = pattern[i]->match(ctext, start);
+            auto [matched, current] = pattern->match(ctext, start);
             if (matched)
             {
                 std::string matchedText = ctext.substr(start, current - start);
@@ -143,7 +210,7 @@ namespace Utils::Regex
             start = current;
         }
 
-        if (i < pattern.size()) {
+        if (i < patterns.size()) {
             return {};
         }
         // m_MaxMatch = start;

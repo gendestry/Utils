@@ -1,7 +1,8 @@
 #pragma once
 #include <vector>
 #include "Token.h"
-#include "AST.h"
+#include "AST/AST.h"
+#include "AST/AstNodeEscape.h"
 
 namespace Utils::Regex::Engine
 {
@@ -54,6 +55,8 @@ namespace Utils::Regex::Engine
 
         bool isInter();
 
+        bool isCapture();
+        bool isNotCapture();
         bool isParen();
         bool isEscapeOp();
         bool isTxtOp();
