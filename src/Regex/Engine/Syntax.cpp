@@ -245,7 +245,7 @@ namespace Utils::Regex::Engine
 
             }
             else {
-                m_Op = new AstNodeEscape({m_Tokens[old].startPos, m_Tokens[m_TokenPos].endPos}, m_EscapeType, m_OpType);
+                m_Op = new AstNodeEscape({m_Tokens[old].startPos, m_Tokens[old].endPos}, m_EscapeType, m_OpType);
             }
 
             return true;

@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 #include <string>
+
+#include "Utils/Text/Stream.h"
 #include "Utils/Text/String.h"
 
 namespace Utils::Regex::Engine
@@ -15,14 +17,39 @@ namespace Utils::Regex::Engine
         // std::vector<Match> groups;
     };
 
-    struct MatchInfo
-    {
-        bool matched = false;
-        unsigned int current = 0;
+    struct MatchInfo {
+        unsigned int start;
         std::string match;
         std::string fullmatch;
+
         std::vector<MatchInfo> groups;
+
+        MatchInfo(){}
+        MatchInfo(unsigned int start, std::string match)
+            : start(start), match(match) {}
+        MatchInfo(unsigned int start, std::string match, std::string fullmatch)
+            : start(start), match(match), fullmatch(fullmatch) {}
+
+        std::string toString() {
+            Utils::Text::Stream s;
+            // s << match << "\n[";
+            s << "[" << match << " ";
+            for (auto group : groups) {
+                s << group.toString() << "";
+            }
+            s << "]";
+            return s.end();
+        }
     };
+
+    // struct MatchInfo
+    // {
+    //     bool matched = false;
+    //     unsigned int current = 0;
+    //     std::string match;
+    //     std::string fullmatch;
+    //     std::vector<MatchInfo> groups;
+    // };
 
     class AstNodeOps {
     protected:
@@ -79,10 +106,9 @@ namespace Utils::Regex::Engine
         virtual std::string toString() = 0;
         virtual std::string toPrettyString() = 0;
         virtual unsigned int _match(std::string text, unsigned int start, bool ignoreAllMathced = false) = 0;
-        virtual MatchInfo _matchS(std::string text, unsigned int start, bool ignoreAllMathced = false) = 0;
-        virtual Match match(std::string text, unsigned int start, bool ignoreAllMathced = false) = 0;
+        virtual Match match(std::string text, unsigned int start, bool ignoreAllMathced = false);
         virtual MatchInfo _match_info(std::string text, unsigned int start, bool ignoreAllMathced = false) { return MatchInfo{};};
-        virtual MatchInfo match_info(std::string text, unsigned int start, bool ignoreAllMathced = false) { return MatchInfo{};};
+        virtual std::optional<MatchInfo> match_info(std::string text, unsigned int start, bool ignoreAllMathced = false);
 
         bool isOtional() const { if (m_OpType == QUESTION_MARK || m_OpType == ASTERIX) return true; return false; };
 

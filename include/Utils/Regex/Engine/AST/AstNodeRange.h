@@ -16,7 +16,9 @@ namespace Utils::Regex::Engine {
         }
 
         unsigned int _match(std::string text, unsigned int start, bool ignoreAllMathced = false) override;
-        Match match(std::string text, unsigned int start, bool ignoreAllMathced = false) override;
+        // Match match(std::string text, unsigned int start, bool ignoreAllMathced = false) override;
+        MatchInfo _match_info(std::string text, unsigned int start, bool ignoreAllMathced = false) override;
+        // std::optional<MatchInfo> match_info(std::string text, unsigned int start, bool ignoreAllMathced = false) override;
 
         std::string toString() override;
         std::string toPrettyString() override;

@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/bobi/Coding/Utils/out/build/debug/cmake_install.cmake",
+		"/home/bobi/Coding/Utils/out/build/debug/examples/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

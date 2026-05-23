@@ -1,0 +1,42 @@
+Package: vcpkg-cmake-config
+Version: 2024-05-23
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 423cca0a43aa23be53fe9e5a6e5d93a9ea889fac28dd6a6de2b126e969786789
+Status: install ok installed
+
+Package: vcpkg-cmake
+Version: 2024-04-23
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 9159d7b7006938d16c46a5089af688b99e162d00e8e882fb5f006d93a6288e91
+Status: install ok installed
+
+Package: asio
+Version: 1.32.0
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: ae82aa7b8b83d47e94fd5c0cb5163f20ac457c2a39561716fff14cb0fd572d66
+Description: Asio is a cross-platform C++ library for network and low-level I/O programming that provides developers with a consistent asynchronous model using a modern C++ approach.
+Status: install ok installed
+
+Package: fmt
+Version: 12.1.0
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: effa762790222f9e4758f36bf1998dba2c30138881d7cbb569f497eedf0e01d9
+Description: {fmt} is an open-source formatting library providing a fast and safe alternative to C stdio and C++ iostreams.
+Status: install ok installed
+
+Package: magic-enum
+Version: 0.9.7
+Port-Version: 1
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 27b47540e201f75db5e621f655ead1349bc455145fe835f4dbfd50390b0806ba
+Description: Header-only C++17 library provides static reflection for enums, work with any enum type without any macro or boilerplate code.
+Status: install ok installed
+

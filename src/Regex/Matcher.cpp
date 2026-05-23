@@ -3,6 +3,7 @@
 #include "Utils/Colors/Font.h"
 
 using namespace Utils;
+using namespace Utils::Regex::Engine;
 
 namespace Utils::Regex
 {
@@ -102,7 +103,48 @@ namespace Utils::Regex
         return match.size() == text.size();
     }
 
-    std::optional<Matcher::MatchInfo> Matcher::matchGroups(const std::string &text) const {
+    std::optional<Engine::MatchInfo> Matcher::matchInfo(const std::string &text) const
+    {
+        if (!m_Valid)
+            return {};
+
+        MatchInfo ret;
+        ret.start = 0;
+
+        std::string match;
+        Engine::Pattern &pattern = m_Syntax->getPattern();
+        unsigned int start = 0;
+
+        for (auto & i : pattern)
+        {
+            PRINT(std::cout << "\n   Matching: " << i->toPrettyString() << " => ";)
+
+            auto [matched, current] = i->match(text, start);
+            if (matched)
+            {
+                const std::string matchedText = text.substr(start, current - start);
+                PRINT(std::cout << "Matched: '" << matchedText << "' ";)
+                match += matchedText;
+            }
+            else
+            {
+                PRINT(std::cout << "Not matched" << std::endl;)
+                return {};
+            }
+            start = current;
+        }
+
+        if( match.size() == 0)
+        {
+            return {};
+        }
+
+        ret.match = match;
+        return ret;
+    }
+
+
+    std::optional<MatchInfo> Matcher::matchGroups(const std::string &text) const {
         if (!m_Valid)
             return {};
 
@@ -165,6 +207,88 @@ namespace Utils::Regex
         return ret;
     }
 
+    std::optional<MatchInfo> Matcher::matchGroupsInfo(const std::string &text) const {
+        if (!m_Valid)
+            return {};
+
+        MatchInfo ret;
+        // int group = 0;
+
+        Engine::Pattern &patterns = m_Syntax->getPattern();
+        unsigned int start = 0;
+        auto current = start;
+        std::vector<std::vector<MatchInfo>> groups;
+
+
+        std::string ctext = std::string(text);
+        unsigned int subs = 0;
+        Engine::Pos i = 0;
+        for (; i < patterns.size(); i++)
+        {
+            auto& pattern = patterns[i];
+            logger.debug("Matching: {} => ", pattern->toPrettyString());
+
+            auto match = pattern->match_info(ctext, start, patterns.size()>1);
+            bool matched = match.has_value();
+
+            if (matched)
+            {
+                current = match->start;
+                std::string matchedText = match->match;
+                logger.debug("Matched: '{}' ", matchedText);
+
+                // if (!match->groups.empty()) {
+                //     groups.push_back(match->groups);
+                //     for (auto& group : match->groups) {
+                //         std::cout << group.match << std::endl;
+                //     }
+                // }
+
+                if (matchedText.empty()) {
+                    continue;
+                }
+
+                if (pattern->shouldIgnore()) {
+                    // ret.groups[0].push_back(matchedText);
+                }
+                if (!match->groups.empty()) {
+                    ret.groups.push_back(match.value());
+                    ret.match += match->match;
+                }
+                // else if (pattern->shouldCapture()) {
+                //     ret.groups.push_back(MatchInfo(start, matchedText));
+                //     ret.match += matchedText;
+                // }
+                else {
+                    ret.match += matchedText;
+                }
+                ret.fullmatch += matchedText;
+            }
+            else
+            {
+                logger.debug("Not matched");
+                // PRINT(std::cout << "Not matched" << std::endl;)
+                if (ctext.size() == 1) {
+                    break;
+                }
+                ctext = ctext.substr(1);
+                subs++;
+                i--;
+            }
+            start = current;
+        }
+
+        if (i < patterns.size()) {
+            return {};
+        }
+        // m_MaxMatch = start;
+        if (ret.match.size() != text.size())
+            return std::nullopt;
+
+        ret.start = subs;
+        return ret;
+    }
+
     std::optional<std::string> Matcher::find(const std::string &text) const {
         if (auto info = findInfo(text); info.has_value()) {
             return info.value().match;
@@ -173,7 +297,7 @@ namespace Utils::Regex
         return {};
     }
 
-    std::optional<Matcher::MatchInfo> Matcher::findInfo(const std::string &text) const {
+    std::optional<MatchInfo> Matcher::findInfo(const std::string &text) const {
         if (!m_Valid)
             return {};
 
@@ -232,7 +356,7 @@ namespace Utils::Regex
         return {};
     }
 
-    std::optional<std::list<Matcher::MatchInfo>> Matcher::findAllInfo(const std::string &text) {
+    std::optional<std::list<MatchInfo>> Matcher::findAllInfo(const std::string &text) {
         if (!m_Valid)
             return {};
 
