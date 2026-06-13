@@ -13,9 +13,11 @@
 #include <type_traits>
 #include <vector>
 
-// #include "Printable.h"
-// #include "Utils.h"
-// #include "Colors.h"
+#include <algorithm>
+#include <cmath>
+
+#include "Utils/Colors/Font.h"
+#include "Utils/Colors/Colors.h"
 
 namespace Utils
 {
@@ -25,19 +27,21 @@ struct Fragment
     uint32_t start = 0U;
     uint32_t size = 0U;
     uint16_t id = 0U;
+    uint8_t* buffer = nullptr;
 
     Fragment() = default;
     Fragment(const Fragment& other) {
         size = other.size;
         start = other.start;
         id = other.id;
+        // buffer intentionally not copied: re-assigned when (re)placed.
     }
     virtual ~Fragment() = default;
     explicit Fragment(uint32_t size) : size(size) {}
     explicit Fragment(uint32_t start, uint32_t size) : start(start), size(size) {}
 
     virtual void setStart(uint32_t st) { start = st; };
-    // virtual void setBuffer(uint8_t* buf) {buffer = buf;}
+    virtual void setBuffer(uint8_t* buf) { buffer = buf; }
 
     [[nodiscard]] std::string describe() const
     {
@@ -65,6 +69,14 @@ protected:
         m_fragmentsNum++;
     }
 
+    [[nodiscard]] std::string nextColor(int index) const
+    {
+        Colors::HSV initColor(110.0f, 0.5f, 0.8f);
+        initColor.h = std::fmod(initColor.h + (m_bytesPatched[index] * 65), 360.0f);
+        auto colorVec = Colors::hsvToRgb(initColor);
+        return Font::colorByRGB(colorVec, true);
+    }
+
     bool checkMultiple(uint32_t start, uint32_t n, uint32_t size)
     {
         if (start + n * size > TSize)
@@ -72,7 +84,7 @@ protected:
             return false;
         }
 
-        for (int i =0; i < n * size; i++)
+        for (uint32_t i = start; i < start + n * size; i++)
         {
             if (!isFree(i))
             {
@@ -187,8 +199,8 @@ public:
             frag->id = m_fragmentsNum;
             fillBytesPatched(curr, frag->start + frag->size);
 
-            auto n = numFragmentsBefore(curr);
-            auto it = std::next(m_fragments.begin(), n);
+            auto before = numFragmentsBefore(curr);
+            auto it = std::next(m_fragments.begin(), before);
             curr+= frag->size;
 
             m_fragments.insert(it, std::move(frag));
@@ -291,62 +303,56 @@ public:
 
 
 
-    // [[nodiscard]] std::string bytesToString() const
-    // {
-    //     std::stringstream ss;
-    //     std::vector<float> colorVecHsv = {110.0f, 0.5f, 0.8f};
-    //     const auto& bytes = m_buffer;
-    //
-    //     std::string col = nextColor(0);
-    //
-    //     const int32_t cond = std::min(static_cast<int32_t>(TSize), 16);
-    //     auto printSeperator = [&]()
-    //     {
-    //         for (int i = 0; i < cond; i++)
-    //         {
-    //             ss << "----";
-    //             if (i < cond - 1)
-    //             {
-    //                 ss << "-";
-    //             }
-    //         }
-    //         ss << std::endl;
-    //     };
-    //
-    //     ss << Colors::colorItalic;
-    //     for (int i = 0; i < cond; i++)
-    //     {
-    //         static const std::string hex = "0123456789ABCDEF";
-    //         ss << "0x" << hex[i] << "  ";
-    //     }
-    //     ss << Colors::colorReset << std::endl;
-    //
-    //     printSeperator();
-    //
-    //     for (int i = 0; i < bytes.size(); i++)
-    //     {
-    //         if (i % 16 == 0 && i != 0)
-    //         {
-    //             ss << std::endl;
-    //         }
-    //
-    //         if (m_bytesPatched[i] != 0)
-    //         {
-    //             col = nextColor(i);
-    //         }
-    //         else
-    //         {
-    //             col = Colors::colorReset + Colors::colorDim + Colors::colorReset;
-    //         }
-    //
-    //         ss << col << Utils::padByte(bytes[i], 3) << Colors::colorReset << "  ";
-    //     }
-    //     ss << std::endl;
-    //
-    //     printSeperator();
-    //
-    //     return ss.str();
-    // }
+    [[nodiscard]] std::string bytesToString() const
+    {
+        std::stringstream ss;
+        const auto& bytes = m_buffer;
+        std::string col = nextColor(0);
+
+        const int32_t cond = std::min(static_cast<int32_t>(TSize), 16);
+        auto printSeperator = [&]()
+        {
+            for (int i = 0; i < cond; i++)
+            {
+                ss << "-----";
+            }
+            ss << std::endl;
+        };
+
+        ss << Font::colorItalic;
+        for (int i = 0; i < cond; i++)
+        {
+            static const std::string hex = "0123456789ABCDEF";
+            ss << "0x" << hex[i] << "  ";
+        }
+        ss << Font::colorReset << std::endl;
+
+        printSeperator();
+
+        for (int i = 0; i < bytes.size(); i++)
+        {
+            if (i % 16 == 0 && i != 0)
+            {
+                ss << std::endl;
+            }
+
+            if (m_bytesPatched[i] != 0)
+            {
+                col = nextColor(i);
+            }
+            else
+            {
+                col = Font::colorReset + Font::colorDim + Font::colorReset;
+            }
+
+            ss << col << std::format("{:3}", static_cast<int>(bytes[i])) << Font::colorReset << "  ";
+        }
+        ss << std::endl;
+
+        printSeperator();
+
+        return ss.str();
+    }
 };
 
 }
