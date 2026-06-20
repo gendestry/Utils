@@ -16,9 +16,15 @@ namespace Utils::Font
     constexpr std::string colorMagenta = "\x1B[35m";
 
     constexpr std::string colorReset = "\x1B[0m";
+    constexpr std::string colorBold = "\x1B[1m";
     constexpr std::string colorDim = "\x1B[2m";
     constexpr std::string colorItalic = "\x1B[3m";
 
     std::string colorByRGB(int r, int g, int b, bool fg = true);
-    std::string colorByRGB(const Colors::RGB& color, bool fg = true);
+    std::string colorByRGB(const Colors::RGB &color, bool fg = true);
+
+    constexpr std::string reset = colorReset;
+    constexpr std::string bold = colorBold;
+    constexpr std::string dim = colorDim;
+    constexpr std::string italic = colorItalic;
 }
