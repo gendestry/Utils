@@ -1,3 +1,12 @@
+# Build output
+build/
+out/
 cmake_build_debug/
+
+# vcpkg
+vcpkg_installed/
+vcpkg-manifest-install.log
+
+# Editors
+.vscode/
 .idea/
-./vscode

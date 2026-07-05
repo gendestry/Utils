@@ -1,6 +1,0 @@
-/home/bobi/Coding/Utils/out/build/debug/CMakeFiles/utils.dir
-/home/bobi/Coding/Utils/out/build/debug/CMakeFiles/edit_cache.dir
-/home/bobi/Coding/Utils/out/build/debug/CMakeFiles/rebuild_cache.dir
-/home/bobi/Coding/Utils/out/build/debug/examples/CMakeFiles/test.dir
-/home/bobi/Coding/Utils/out/build/debug/examples/CMakeFiles/edit_cache.dir
-/home/bobi/Coding/Utils/out/build/debug/examples/CMakeFiles/rebuild_cache.dir

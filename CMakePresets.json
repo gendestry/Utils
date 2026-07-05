@@ -5,18 +5,22 @@
       "name": "debug",
       "displayName": "Debug",
       "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
       "toolchainFile": "/home/bobi/.vcpkg/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
     {
       "name": "release",
       "displayName": "Release",
       "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
       "toolchainFile": "/home/bobi/.vcpkg/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     }
   ]
