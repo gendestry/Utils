@@ -30,7 +30,7 @@ class Args
     std::optional<std::string> value(std::string_view key) const;
 
     const std::vector<std::string> &raw() const;
-    auto begin() const;
-    auto end() const;
+    auto begin() const { return m_tokens.begin(); }
+    auto end() const { return m_tokens.end(); }
 };
 } // namespace Utils::Commands

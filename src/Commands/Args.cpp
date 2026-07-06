@@ -53,7 +53,4 @@ std::optional<std::string> Args::value(std::initializer_list<std::string_view> k
 std::optional<std::string> Args::value(std::string_view key) const { return value({key}); }
 
 const std::vector<std::string> &Args::raw() const { return m_tokens; }
-
-auto Args::begin() const { return m_tokens.begin(); }
-auto Args::end() const { return m_tokens.end(); }
 } // namespace Utils::Commands
