@@ -2,7 +2,6 @@
 #include "Utils/Math/Curve.h"
 #include <cstddef>
 #include <cstdint>
-#include <initializer_list>
 #include <memory>
 #include <vector>
 
@@ -38,21 +37,13 @@ bool Gradient::pushSegment(const GradientSegment &seg)
     return true;
 }
 
-std::vector<RGB> Gradient::gradient(const RGB &color1, const RGB &color2, const uint16_t length,
-                                    bool half)
+// Ramps from color2 to color1 over `length` entries, eased by a quarter sine.
+std::vector<RGB> Gradient::gradient(const RGB &color1, const RGB &color2, const uint16_t length)
 {
     std::vector<RGB> ret;
     ret.resize(length);
 
-    std::unique_ptr<Maths::Curve> curve;
-    if (half)
-    {
-        curve = std::make_unique<Maths::SinusoidHalf>(length);
-    }
-    else
-    {
-        curve = std::make_unique<Maths::Sinusoid>(length);
-    }
+    const std::unique_ptr<Maths::Curve> curve = std::make_unique<Maths::SinusoidHalf>(length);
 
     for (uint16_t i = 0; i < length; i++)
     {
@@ -70,6 +61,8 @@ std::vector<RGB> Gradient::gradient(const RGB &color1, const RGB &color2, const 
 void Gradient::calculateGradient()
 {
     m_gradient.clear();
+    if (m_segments.empty())
+        return;
 
     if (m_segments.size() == 1)
     {
@@ -87,22 +80,36 @@ void Gradient::calculateGradient()
     float acc = 0.f;
     uint16_t start = 0;
     uint16_t end = 0;
+    const size_t size = m_segments.size();
 
-    for (size_t i = 0; i < m_segments.size(); i++)
+    // A hard cutoff is not cyclic: the last segment is only a target colour, it owns no
+    // pixels, so the remaining segments are renormalized to share the whole strip.
+    const size_t count = m_hardCutoff ? size - 1 : size;
+    float total = m_total;
+    if (m_hardCutoff)
+    {
+        total -= m_segments.back().percentage;
+    }
+
+    if (total <= 0.f)
+    {
+        m_gradient.resize(m_size);
+        return;
+    }
+
+    for (size_t i = 0; i < count; i++)
     {
         auto &seg = m_segments[i];
-        acc += seg.norm;
+        acc += seg.percentage / total;
         end = static_cast<uint16_t>(acc * m_size);
         if (end <= start)
         {
             continue; // skip empty/rounded-away segments
         }
 
-        // half = m_hardCutoff && (i == m_segments.size() - 1);
-
         const auto &c1 = seg.color;
-        const auto &c2 = m_segments[(i + 1) % m_segments.size()].color;
-        auto grad = gradient(c2, c1, end - start, true);
+        const auto &c2 = m_segments[(i + 1) % size].color;
+        auto grad = gradient(c2, c1, end - start);
         m_gradient.insert(m_gradient.end(), grad.begin(), grad.end());
         start = end;
     }

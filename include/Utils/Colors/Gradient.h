@@ -24,7 +24,7 @@ class Gradient
 
     void normalize();
     bool pushSegment(const GradientSegment &seg);
-    std::vector<RGB> gradient(const RGB &color1, const RGB &color2, uint16_t length, bool half);
+    std::vector<RGB> gradient(const RGB &color1, const RGB &color2, uint16_t length);
     void calculateGradient();
 
   public:
