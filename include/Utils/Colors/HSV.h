@@ -3,29 +3,31 @@
 //
 
 #pragma once
-#include <string>
 #include <cstdint>
+#include <string>
 
 namespace Utils::Colors
 {
-    struct HSV
+struct RGB;
+struct HSV
+{
+    union
     {
-        union
+        struct
         {
-            struct
-            {
-                float h,s,v;
-            };
-            float hsv[3];
+            float h = 0.f, s = 0.f, v = 0.f;
         };
-
-        HSV() = default;
-
-        HSV(float hue, float saturation, float value);
-
-        float& operator[](uint8_t index);
-        float operator[](uint8_t index) const;
-
-        [[nodiscard]] std::string toString() const;
+        float hsv[3];
     };
-}
+
+    HSV() = default;
+
+    HSV(float hue, float saturation, float value);
+
+    float &operator[](uint8_t index);
+    float operator[](uint8_t index) const;
+
+    [[nodiscard]] RGB toRGB() const;
+    [[nodiscard]] std::string toString() const;
+};
+} // namespace Utils::Colors

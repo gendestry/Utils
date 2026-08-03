@@ -1,7 +1,10 @@
 #include "Utils/Colors/Gradient.h"
+#include "Utils/Colors/Colors.h"
+#include "Utils/Colors/RGB.h"
 #include "Utils/Math/Curve.h"
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <memory>
 #include <vector>
 
@@ -47,12 +50,9 @@ std::vector<RGB> Gradient::gradient(const RGB &color1, const RGB &color2, const 
 
     for (uint16_t i = 0; i < length; i++)
     {
-        const float t = (*curve)[i];
-        const uint8_t r = static_cast<uint8_t>(color1.r * t + color2.r * (1.f - t));
-        const uint8_t g = static_cast<uint8_t>(color1.g * t + color2.g * (1.f - t));
-        const uint8_t b = static_cast<uint8_t>(color1.b * t + color2.b * (1.f - t));
-
-        ret[i] = {r, g, b};
+        // float t = (*curve)[i]
+        // The curve runs 0 -> 1, but this ramp starts at color2, so it is the `from` endpoint.
+        ret[i] = lerpInHSV(color2, color1, (*curve)[i]);
     }
 
     return ret;

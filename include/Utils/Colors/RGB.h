@@ -3,11 +3,12 @@
 //
 
 #pragma once
-#include <string>
 #include <cstdint>
+#include <string>
 
 namespace Utils::Colors
 {
+struct HSV;
 struct RGB
 {
     union
@@ -25,11 +26,12 @@ struct RGB
     RGB() = default;
     RGB(uint8_t red, uint8_t green, uint8_t blue);
 
-    RGB& toPercentage();
+    RGB &toPercentage();
 
-    uint8_t& operator[](uint8_t index);
+    uint8_t &operator[](uint8_t index);
     uint8_t operator[](uint8_t index) const;
 
+    [[nodiscard]] HSV toHSV() const;
     [[nodiscard]] std::string toString() const;
 };
-}
+} // namespace Utils::Colors
