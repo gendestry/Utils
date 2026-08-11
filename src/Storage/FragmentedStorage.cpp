@@ -2,9 +2,11 @@
 // // Created by bobi on 7. 03. 26.
 // //
 //
-// #include "FragmentedStorage.h"
+#include "Utils/Storage/FragmentedStorage.h"
 //
-// using namespace Utils;
+using namespace Utils;
+
+uint32_t Fragment::suid = 0;
 //
 // template <typename T, size_t TSize>
 // requires std::is_base_of_v<Fragment, T>
