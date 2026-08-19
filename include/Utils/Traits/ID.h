@@ -39,8 +39,8 @@ class UniqueIDGenerator
     uint64_t getUID() const { return m_id; }
 
   private:
-    uint64_t m_id = 0;
     static uint64_t id_generator;
+    uint64_t m_id = 0;
 };
 
 uint64_t UniqueIDGenerator::id_generator = 0;
