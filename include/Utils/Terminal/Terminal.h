@@ -38,6 +38,8 @@ class Terminal
         ARROW_DOWN,
         ARROW_LEFT,
         ARROW_RIGHT,
+        CTRL_ARROW_LEFT,
+        CTRL_ARROW_RIGHT
     };
 
     std::optional<char> readNext();

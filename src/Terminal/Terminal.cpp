@@ -89,8 +89,26 @@ std::optional<Terminal::Escape> Terminal::isEscapeCharacter(char in)
             {
                 return Escape::ARROW_LEFT;
             }
-            default:
-                return std::nullopt;
+            }
+
+            // Ctrl + Arrow: ESC [ 1 ; 5 C/D
+            if (c2.value() == '1')
+            {
+                auto semi = readNext();
+                auto modifier = readNext();
+                auto direction = readNext();
+
+                if (!semi || !modifier || !direction)
+                    return std::nullopt;
+
+                if (*semi == ';' && *modifier == '5')
+                {
+                    if (*direction == 'C')
+                        return Escape::CTRL_ARROW_RIGHT;
+
+                    if (*direction == 'D')
+                        return Escape::CTRL_ARROW_LEFT;
+                }
             }
         }
     }
