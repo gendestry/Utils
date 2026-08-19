@@ -3,11 +3,14 @@
 //
 
 #pragma once
+#include "Utils/Text/String.h"
 #include <string>
 
-namespace Utils::Traits {
-    struct Stringify {
-        virtual ~Stringify() = default;
-        virtual std::string toString() = 0;
-    };
-}
+namespace Utils::Traits
+{
+struct Stringify
+{
+    virtual ~Stringify() = default;
+    virtual std::string toString() = 0;
+};
+} // namespace Utils::Traits
