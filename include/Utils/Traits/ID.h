@@ -14,6 +14,9 @@ template <typename T> class IDGenerator
 {
   public:
     IDGenerator() : m_id(id_generator++) {}
+    IDGenerator(const IDGenerator &other) : m_id(id_generator++) {}
+    IDGenerator(IDGenerator &&other) : m_id(other.m_id) {}
+
     uint64_t getUID() const { return m_id; }
 
   private:
@@ -29,11 +32,14 @@ All IDs are uniquely generated, across all classes
 class UniqueIDGenerator
 {
   public:
-    UniqueIDGenerator() : uid(id_generator++) {}
-    uint64_t getUID() const { return uid; }
+    UniqueIDGenerator() : m_id(id_generator++) {}
+    UniqueIDGenerator(const UniqueIDGenerator &other) : m_id(id_generator++) {}
+
+    UniqueIDGenerator(UniqueIDGenerator &&other) : m_id(other.m_id) {}
+    uint64_t getUID() const { return m_id; }
 
   private:
-    uint64_t uid = 0;
+    uint64_t m_id = 0;
     static uint64_t id_generator;
 };
 

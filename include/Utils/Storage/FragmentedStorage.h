@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include "Utils/Traits/ID.h"
 #include <array>
 #include <cstdint>
 #include <format>
@@ -20,13 +21,8 @@
 namespace Utils
 {
 
-class Fragment
+class Fragment : Traits::IDGenerator<Fragment>
 {
-    static uint32_t suid;
-
-  protected:
-    uint32_t uid = 0U;
-
   public:
     uint32_t start = 0U;
     uint32_t size = 0U;
@@ -38,7 +34,6 @@ class Fragment
         size = other.size;
         start = other.start;
         id = other.id;
-        uid = suid++;
     }
     virtual ~Fragment() = default;
     explicit Fragment(uint32_t size) : size(size) {}
