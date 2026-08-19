@@ -17,8 +17,16 @@ template <typename T> class IDGenerator
     IDGenerator(const IDGenerator &other) : m_id(id_generator++) {}
     IDGenerator(IDGenerator &&other) : m_id(other.m_id) {}
 
-    IDGenerator &operator=(const IDGenerator &other) { m_id = id_generator++; }
-    IDGenerator &operator=(IDGenerator &&other) { m_id = other.m_id; }
+    IDGenerator &operator=(const IDGenerator &other)
+    {
+        m_id = id_generator++;
+        return *this;
+    }
+    IDGenerator &operator=(IDGenerator &&other)
+    {
+        m_id = other.m_id;
+        return *this;
+    }
 
     uint64_t getUID() const { return m_id; }
 
@@ -39,8 +47,16 @@ class UniqueIDGenerator
     UniqueIDGenerator(const UniqueIDGenerator &other) : m_id(id_generator++) {}
     UniqueIDGenerator(UniqueIDGenerator &&other) : m_id(other.m_id) {}
 
-    UniqueIDGenerator &operator=(const UniqueIDGenerator &other) { m_id = id_generator++; }
-    UniqueIDGenerator &operator=(UniqueIDGenerator &&other) { m_id = other.m_id; }
+    UniqueIDGenerator &operator=(const UniqueIDGenerator &other)
+    {
+        m_id = id_generator++;
+        return *this;
+    }
+    UniqueIDGenerator &operator=(UniqueIDGenerator &&other)
+    {
+        m_id = other.m_id;
+        return *this;
+    }
 
     uint64_t getUID() const { return m_id; }
 
