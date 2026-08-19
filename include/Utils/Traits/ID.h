@@ -17,6 +17,9 @@ template <typename T> class IDGenerator
     IDGenerator(const IDGenerator &other) : m_id(id_generator++) {}
     IDGenerator(IDGenerator &&other) : m_id(other.m_id) {}
 
+    IDGenerator &operator=(const IDGenerator &other) { m_id = id_generator++; }
+    IDGenerator &operator=(IDGenerator &&other) { m_id = other.m_id; }
+
     uint64_t getUID() const { return m_id; }
 
   private:
@@ -34,8 +37,11 @@ class UniqueIDGenerator
   public:
     UniqueIDGenerator() : m_id(id_generator++) {}
     UniqueIDGenerator(const UniqueIDGenerator &other) : m_id(id_generator++) {}
-
     UniqueIDGenerator(UniqueIDGenerator &&other) : m_id(other.m_id) {}
+
+    UniqueIDGenerator &operator=(const UniqueIDGenerator &other) { m_id = id_generator++; }
+    UniqueIDGenerator &operator=(UniqueIDGenerator &&other) { m_id = other.m_id; }
+
     uint64_t getUID() const { return m_id; }
 
   private:
@@ -43,5 +49,4 @@ class UniqueIDGenerator
     uint64_t m_id = 0;
 };
 
-uint64_t UniqueIDGenerator::id_generator = 0;
 } // namespace Utils::Traits
