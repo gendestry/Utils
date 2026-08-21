@@ -29,7 +29,9 @@ inline FormatExpr text(std::string_view str)
     return FormatExpr{[str](std::string_view) { return std::string(str); }};
 }
 
-template <typename... Args> FormatExpr color(std::string color_code, Args &&...args)
+namespace detail
+{
+template <typename... Args> std::vector<FormatExpr> collectChildren(Args &&...args)
 {
     std::vector<FormatExpr> children;
 
@@ -50,6 +52,34 @@ template <typename... Args> FormatExpr color(std::string color_code, Args &&...a
     };
 
     (add(std::forward<Args>(args)), ...);
+
+    return children;
+}
+} // namespace detail
+
+// Transparent container: contributes no colour of its own, so children render against
+// whatever colour encloses the group (plain terminal default at the top level).
+//     format(group("connected to ", Theme::lbl("{}"), " on port ", Theme::num("{}")), host, port);
+template <typename... Args> FormatExpr group(Args &&...args)
+{
+    return FormatExpr{[children = detail::collectChildren(std::forward<Args>(args)...)](
+                          std::string_view parent_color
+                      )
+    {
+        std::string result;
+
+        for (const auto &child : children)
+        {
+            result += child.render(parent_color);
+        }
+
+        return result;
+    }};
+}
+
+template <typename... Args> FormatExpr color(std::string color_code, Args &&...args)
+{
+    auto children = detail::collectChildren(std::forward<Args>(args)...);
 
     return FormatExpr{[color_code = std::move(color_code),
                        children = std::move(children)](std::string_view parent_color)
