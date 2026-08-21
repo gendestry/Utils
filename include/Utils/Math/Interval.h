@@ -72,8 +72,10 @@ class Interval : public Traits::Stringify
 {
 
     std::list<IntervalBase> m_bases;
+    std::vector<uint64_t> m_cache;
 
     void fragment();
+    void cache();
 
   public:
     // void add(uint64_t from, uint64_t to) { Int m_bases.emplace_back(from, to); }
@@ -82,6 +84,7 @@ class Interval : public Traits::Stringify
         if (m_bases.empty())
         {
             m_bases.emplace_back(std::move(base));
+            cache();
             return;
         }
 
@@ -165,6 +168,8 @@ class Interval : public Traits::Stringify
 
             break;
         }
+
+        cache();
     }
 
     void remove(uint64_t from, uint64_t to) { remove(IntervalBase(from, to)); }
@@ -182,7 +187,11 @@ class Interval : public Traits::Stringify
 
     bool empty() const { return m_bases.empty(); }
 
-    void clear() { m_bases.clear(); }
+    void clear()
+    {
+        m_bases.clear();
+        m_cache.clear();
+    }
 
     bool contains(uint64_t value)
     {
@@ -200,17 +209,9 @@ class Interval : public Traits::Stringify
         return false;
     }
 
-    [[nodiscard]] std::vector<uint64_t> values() const
-    {
-        std::vector<uint64_t> ret;
+    [[nodiscard]] const std::vector<uint64_t> &values() const { return m_cache; }
 
-        for (const auto &base : m_bases)
-        {
-            ret.insert(ret.end(), base.values().begin(), base.values().end());
-        }
-
-        return ret;
-    }
+    [[nodiscard]] uint64_t size() const { return m_cache.size(); }
 
     friend Interval operator|(const Interval &lhs, const Interval &rhs);
     friend Interval operator&(const Interval &lhs, const Interval &rhs);

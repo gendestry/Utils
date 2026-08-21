@@ -7,24 +7,42 @@ void Interval::fragment()
 {
     auto bit = m_bases.begin();
 
-    if (bit == m_bases.end())
-        return;
-
-    auto cit = std::next(bit);
-
-    while (cit != m_bases.end())
+    if (bit != m_bases.end())
     {
-        if (bit->touches(*cit))
+        auto cit = std::next(bit);
+
+        while (cit != m_bases.end())
         {
-            bit->merge(*cit);
-            cit = m_bases.erase(cit);
-        }
-        else
-        {
-            bit = cit;
-            cit = std::next(cit);
+            if (bit->touches(*cit))
+            {
+                bit->merge(*cit);
+                cit = m_bases.erase(cit);
+            }
+            else
+            {
+                bit = cit;
+                cit = std::next(cit);
+            }
         }
     }
+
+    cache();
+}
+
+void Interval::cache()
+{
+    m_cache.clear();
+
+    uint64_t total = 0;
+    for (const auto &base : m_bases)
+        total += base.getSize();
+
+    m_cache.reserve(total);
+
+    // m_bases is kept sorted and non-overlapping, so appending each base's
+    // values in order yields a sorted, duplicate-free cache.
+    for (const auto &base : m_bases)
+        m_cache.insert(m_cache.end(), base.values().begin(), base.values().end());
 }
 
 Interval operator|(const Interval &lhs, const Interval &rhs)
