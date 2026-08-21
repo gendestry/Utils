@@ -27,8 +27,13 @@ int main()
     Utils::Logger logger("Main");
     logger.setLoggerLevel(Utils::Logger::DEBUGGING);
 
-    // Maths::IntervalBase A(0, 10);
-    // Maths::IntervalBase B(16, 20);
+    // Maths::IntervalBase A(0, 3);
+    // Maths::IntervalBase B(7, 12);
+    // Maths::IntervalBase C(18, 20);
+    // Maths::IntervalBase D(1, 7);
+    // Maths::IntervalBase E(16, 17);
+
+    // auto c = A | B;
     // if (A.merge(B))
     // {
     //     logger.println("{}", A.toString());
@@ -41,7 +46,19 @@ int main()
     // Maths::Interval interval;
     // interval.add(A);
     // interval.add(B);
+    // interval.add(C);
     // logger.println("{}", interval.toString());
+
+    // Maths::Interval interval2;
+    // interval2.add(D);
+    // interval2.add(E);
+    // logger.println("{}", interval2.toString());
+
+    // auto uni = interval | interval2;
+    // auto inter = interval & interval2;
+
+    // logger.println("U: {}", uni.toString());
+    // logger.println("I: {}", inter.toString());
 
     // interval.remove(9);
     // logger.println("{}", interval.toString());

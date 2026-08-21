@@ -28,7 +28,6 @@ class IntervalBase : public Traits::Stringify
     IntervalBase(uint64_t from, uint64_t to) : start(from), end(to), m_size(to - from) { fill(); }
 
     uint64_t getFrom() const { return start; }
-
     uint64_t getTo() const { return end; }
 
     uint64_t getSize() const { return end - start + 1; }
@@ -73,29 +72,7 @@ class Interval : public Traits::Stringify
 
     std::list<IntervalBase> m_bases;
 
-    void fragment()
-    {
-        auto bit = m_bases.begin();
-
-        if (bit == m_bases.end())
-            return;
-
-        auto cit = std::next(bit);
-
-        while (cit != m_bases.end())
-        {
-            if (bit->touches(*cit))
-            {
-                bit->merge(*cit);
-                cit = m_bases.erase(cit);
-            }
-            else
-            {
-                bit = cit;
-                cit = std::next(cit);
-            }
-        }
-    }
+    void fragment();
 
   public:
     // void add(uint64_t from, uint64_t to) { Int m_bases.emplace_back(from, to); }
@@ -225,6 +202,23 @@ class Interval : public Traits::Stringify
         return ret;
     }
 
+    friend Interval operator|(const Interval &lhs, const Interval &rhs);
+    friend Interval operator&(const Interval &lhs, const Interval &rhs);
+
+    Interval &operator|=(const Interval &other)
+    {
+        for (const auto &base : other.m_bases)
+            add(base);
+
+        return *this;
+    }
+
+    Interval &operator&=(const Interval &other)
+    {
+        *this = *this & other;
+        return *this;
+    }
+
     [[nodiscard]] std::string toString() const override
     {
         Utils::Text::Stream s;
@@ -244,4 +238,7 @@ class Interval : public Traits::Stringify
         return s.end();
     }
 };
+
+Interval operator|(const Interval &lhs, const Interval &rhs);
+Interval operator&(const Interval &lhs, const Interval &rhs);
 } // namespace Utils::Maths
