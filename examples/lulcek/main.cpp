@@ -27,8 +27,8 @@ int main()
     Utils::Logger logger("Main");
     logger.setLoggerLevel(Utils::Logger::DEBUGGING);
 
-    Maths::IntervalBase A(0, 10);
-    Maths::IntervalBase B(16, 20);
+    // Maths::IntervalBase A(0, 10);
+    // Maths::IntervalBase B(16, 20);
     // if (A.merge(B))
     // {
     //     logger.println("{}", A.toString());
@@ -38,25 +38,25 @@ int main()
     // {
     //     logger.println("123{}", A.toString());
     // }
-    Maths::Interval interval;
-    interval.add(A);
-    interval.add(B);
-    logger.println("{}", interval.toString());
+    // Maths::Interval interval;
+    // interval.add(A);
+    // interval.add(B);
+    // logger.println("{}", interval.toString());
 
-    interval.remove(9);
-    logger.println("{}", interval.toString());
+    // interval.remove(9);
+    // logger.println("{}", interval.toString());
 
-    interval.remove({2, 5});
-    logger.println("{}", interval.toString());
+    // interval.remove({2, 5});
+    // logger.println("{}", interval.toString());
 
-    interval.add(5);
-    logger.println("{}", interval.toString());
+    // interval.add(5);
+    // logger.println("{}", interval.toString());
 
-    // interval.add({8, 13});
+    // // interval.add({8, 13});
 
-    logger.println("{}", interval.toString());
-    logger.println("{}", interval.contains(10));
-    logger.println("{}", interval.contains(7));
+    // logger.println("{}", interval.toString());
+    // logger.println("{}", interval.contains(10));
+    // logger.println("{}", interval.contains(7));
     // logger.println("{}", A > B);
     // logger.println("{}", B < A);
     // logger.println("{}", B > A);

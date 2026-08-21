@@ -14,6 +14,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "Utils/Traits/Stringify.h"
+
 // #include "Printable.h"
 // #include "Utils.h"
 // #include "Colors.h"
@@ -21,7 +23,7 @@
 namespace Utils
 {
 
-class Fragment : Traits::IDGenerator<Fragment>
+class Fragment : public Traits::Stringify
 {
   public:
     uint32_t start = 0U;
@@ -42,13 +44,13 @@ class Fragment : Traits::IDGenerator<Fragment>
     virtual void setStart(uint32_t st) { start = st; };
     // virtual void setBuffer(uint8_t* buf) {buffer = buf;}
 
-    [[nodiscard]] std::string describe() const
-    {
-        std::stringstream ss;
-        ss << "FragID: " << id << " [" << size << " bytes]";
-        return ss.str();
-        // return std::format(R"({})", name);
-    }
+    // [[nodiscard]] std::string describe() const
+    // {
+    //     std::stringstream ss;
+    //     ss << "FragID: " << id << " [" << size << " bytes]";
+    //     return ss.str();
+    //     // return std::format(R"({})", name);
+    // }
 };
 
 template <typename T, size_t TSize>
@@ -283,7 +285,7 @@ class FragmentedStorage
             // 1, start + fragment->size, Colors::colorItalic, fragment->name, fragment->id,
             // fragment->size, Colors::colorReset);
             ss << std::format("[{:3}, {:3}] {}\n", start, start + fragment->size - 1,
-                              fragment->describe());
+                              fragment->toString());
             curr = start + fragment->size;
         }
 
