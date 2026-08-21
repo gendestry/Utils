@@ -116,7 +116,15 @@ class Interval : public Traits::Stringify
     };
 
     void add(uint64_t from, uint64_t to) { add(IntervalBase(from, to)); }
-    void add(uint64_t value) { add({value, value}); }
+    void add(uint64_t value) { add(IntervalBase{value, value}); }
+
+    void add(std::vector<uint64_t> values)
+    {
+        for (auto &v : values)
+        {
+            add(v);
+        }
+    };
 
     void remove(const IntervalBase &removal)
     {
@@ -180,6 +188,14 @@ class Interval : public Traits::Stringify
 
     void remove(uint64_t from, uint64_t to) { remove(IntervalBase(from, to)); }
     void remove(uint64_t value) { remove(IntervalBase(value, value)); }
+
+    void remove(std::vector<uint64_t> values)
+    {
+        for (auto &v : values)
+        {
+            remove(v);
+        }
+    };
 
     bool contains(uint64_t value)
     {
