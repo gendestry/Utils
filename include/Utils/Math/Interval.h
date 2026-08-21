@@ -2,6 +2,7 @@
 #include "Utils/Text/Stream.h"
 #include "Utils/Traits/Stringify.h"
 #include <algorithm>
+#include <concepts>
 #include <cstdint>
 #include <iterator>
 #include <list>
@@ -95,11 +96,14 @@ class Interval : public Traits::Stringify
     void add(uint64_t from, uint64_t to) { add(IntervalBase(from, to)); }
     void add(uint64_t value) { add(IntervalBase{value, value}); }
 
-    void add(std::vector<uint64_t> values)
+    // Accepts any range of integrals (vector<uint16_t>, span, initializer_list, ...)
+    template <std::ranges::input_range R>
+        requires std::integral<std::ranges::range_value_t<R>>
+    void add(const R &values)
     {
-        for (auto &v : values)
+        for (const auto &v : values)
         {
-            add(v);
+            add(static_cast<uint64_t>(v));
         }
     };
 
@@ -166,11 +170,13 @@ class Interval : public Traits::Stringify
     void remove(uint64_t from, uint64_t to) { remove(IntervalBase(from, to)); }
     void remove(uint64_t value) { remove(IntervalBase(value, value)); }
 
-    void remove(std::vector<uint64_t> values)
+    template <std::ranges::input_range R>
+        requires std::integral<std::ranges::range_value_t<R>>
+    void remove(const R &values)
     {
-        for (auto &v : values)
+        for (const auto &v : values)
         {
-            remove(v);
+            remove(static_cast<uint64_t>(v));
         }
     };
 
