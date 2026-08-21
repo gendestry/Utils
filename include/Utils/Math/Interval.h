@@ -174,6 +174,10 @@ class Interval : public Traits::Stringify
         }
     };
 
+    bool empty() const { return m_bases.empty(); }
+
+    void clear() { m_bases.clear(); }
+
     bool contains(uint64_t value)
     {
         for (auto &it : m_bases)
