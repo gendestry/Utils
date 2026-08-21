@@ -215,6 +215,18 @@ class Interval : public Traits::Stringify
     friend Interval operator|(const Interval &lhs, const Interval &rhs);
     friend Interval operator&(const Interval &lhs, const Interval &rhs);
 
+    Interval &operator+=(uint64_t value)
+    {
+        add(value);
+        return *this;
+    }
+
+    Interval &operator-=(uint64_t value)
+    {
+        remove(value);
+        return *this;
+    }
+
     Interval &operator|=(const Interval &other)
     {
         for (const auto &base : other.m_bases)
