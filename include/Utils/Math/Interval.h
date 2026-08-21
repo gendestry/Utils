@@ -64,7 +64,7 @@ class IntervalBase : public Traits::Stringify
 
     [[nodiscard]] std::string toString() const override
     {
-        return Utils::String::format("[{}...{}]", start, end);
+        return Utils::String::format("{}...{}", start, end);
     }
 };
 
@@ -251,7 +251,7 @@ class Interval : public Traits::Stringify
         for (const auto &base : m_bases)
         {
             if (!first)
-                s << ", ";
+                s << ",";
 
             s << base.toString();
             first = false;
