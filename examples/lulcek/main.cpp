@@ -15,6 +15,7 @@
 // #include "Network/Interfaces.h"
 // #include "Network/SACN.h"
 // #include "Text/Stream.h"
+#include "Utils/Colors/ColorFormatter.h"
 #include "Utils/Math/Interval.h"
 #include <array>
 #include <chrono>
@@ -27,61 +28,10 @@ int main()
     Utils::Logger logger("Main");
     logger.setLoggerLevel(Utils::Logger::DEBUGGING);
 
-    // Maths::IntervalBase A(0, 3);
-    // Maths::IntervalBase B(7, 12);
-    // Maths::IntervalBase C(18, 20);
-    // Maths::IntervalBase D(1, 7);
-    // Maths::IntervalBase E(16, 17);
-
-    // auto c = A | B;
-    // if (A.merge(B))
-    // {
-    //     logger.println("{}", A.toString());
-    // }
-
-    // if (B.overlaps(A))
-    // {
-    //     logger.println("123{}", A.toString());
-    // }
-    // Maths::Interval interval;
-    // interval.add(A);
-    // interval.add(B);
-    // interval.add(C);
-    // logger.println("{}", interval.toString());
-
-    // Maths::Interval interval2;
-    // interval2.add(D);
-    // interval2.add(E);
-    // logger.println("{}", interval2.toString());
-
-    // auto uni = interval | interval2;
-    // auto inter = interval & interval2;
-
-    // logger.println("U: {}", uni.toString());
-    // logger.println("I: {}", inter.toString());
-
-    // interval.remove(9);
-    // logger.println("{}", interval.toString());
-
-    // interval.remove({2, 5});
-    // logger.println("{}", interval.toString());
-
-    // interval.add(5);
-    // logger.println("{}", interval.toString());
-
-    // // interval.add({8, 13});
-
-    // logger.println("{}", interval.toString());
-    // logger.println("{}", interval.contains(10));
-    // logger.println("{}", interval.contains(7));
-    // logger.println("{}", A > B);
-    // logger.println("{}", B < A);
-    // logger.println("{}", B > A);
+    using namespace Font;
+    auto test = RED("Test {}", GREEN("x: {}, y: {}"), " wowie");
+    std::cout << format(test, "neki", 2, 4.3f);
     return 0;
-
-    // Utils::Colors::Gradient grad(20);
-    // grad.addSegment({{255, 0, 0}, 100, 0});
-    // grad.addSegment({{0, 0, 255}, 100, 0});
     // for (auto a : grad.get())
     // {
     //     std::cout << a.toString() << std::endl;
@@ -106,10 +56,7 @@ int main()
     // sender.send();
     // sender.send(packet);
 
-    Utils::Regex::Matcher matcher("[a-z]{2,5}");
-
-    matcher.printTokens();
-    matcher.printAst();
+    RED("TEST {}", GREEN("BLAH {}"), "{}");
 
     // std::string m = "aa";
     // logger.println("Input: '{}'", m);

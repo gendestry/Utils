@@ -5,3 +5,5 @@ TabWidth: 4
 UseTab: Never
 ColumnLimit: 100
 NamespaceIndentation: None
+AlignAfterOpenBracket: BlockIndent
+LambdaBodyIndentation: OuterScope
