@@ -37,6 +37,9 @@ class Fragment : public Traits::Stringify
         start = other.start;
         id = other.id;
     }
+    Fragment(Fragment &&other) = default;
+    Fragment &operator=(const Fragment &other) = default;
+    Fragment &operator=(Fragment &&other) = default;
     virtual ~Fragment() = default;
     explicit Fragment(uint32_t size) : size(size) {}
     explicit Fragment(uint32_t start, uint32_t size) : start(start), size(size) {}
@@ -148,7 +151,7 @@ class FragmentedStorage
             throw std::runtime_error("Fragment overlaps other segment");
         }
 
-        std::shared_ptr<T> frag = std::make_shared<T>(newFragment);
+        std::shared_ptr<T> frag = std::make_shared<T>(std::move(newFragment));
         frag->setStart(start);
         frag->id = m_fragmentsNum;
         fillBytesPatched(start, frag->start + frag->size);
@@ -167,7 +170,7 @@ class FragmentedStorage
         }
 
         auto start = v.value();
-        std::shared_ptr<T> frag = std::make_shared<T>(newFragment);
+        std::shared_ptr<T> frag = std::make_shared<T>(std::move(newFragment));
         frag->setStart(start);
         frag->id = m_fragmentsNum;
         fillBytesPatched(start, frag->start + frag->size);
@@ -194,13 +197,15 @@ class FragmentedStorage
         uint32_t curr = start;
         for (int i = 0; i < n; i++)
         {
-            std::shared_ptr<T> frag = std::make_shared<T>(newFragment);
+            // last one can steal the prototype, the rest must copy it
+            std::shared_ptr<T> frag = (i + 1 == n) ? std::make_shared<T>(std::move(newFragment))
+                                                   : std::make_shared<T>(newFragment);
             frag->setStart(curr);
             frag->id = m_fragmentsNum;
             fillBytesPatched(curr, frag->start + frag->size);
 
-            auto n = numFragmentsBefore(curr);
-            auto it = std::next(m_fragments.begin(), n);
+            auto before = numFragmentsBefore(curr);
+            auto it = std::next(m_fragments.begin(), before);
             curr += frag->size;
 
             m_fragments.insert(it, std::move(frag));
@@ -216,7 +221,7 @@ class FragmentedStorage
             throw std::out_of_range("Out of range");
         }
 
-        std::shared_ptr<T> frag = std::make_shared<T>(newFragment);
+        std::shared_ptr<T> frag = std::make_shared<T>(std::move(newFragment));
         frag->setStart(offset);
         frag->id = m_fragmentsNum;
         fillBytesPatched(offset, offset + frag->size);

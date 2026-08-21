@@ -15,14 +15,14 @@ template <typename T> class IDGenerator
   public:
     IDGenerator() : m_id(id_generator++) {}
     IDGenerator(const IDGenerator &other) : m_id(id_generator++) {}
-    IDGenerator(IDGenerator &&other) : m_id(other.m_id) {}
+    IDGenerator(IDGenerator &&other) noexcept : m_id(other.m_id) {}
 
     IDGenerator &operator=(const IDGenerator &other)
     {
         m_id = id_generator++;
         return *this;
     }
-    IDGenerator &operator=(IDGenerator &&other)
+    IDGenerator &operator=(IDGenerator &&other) noexcept
     {
         m_id = other.m_id;
         return *this;
