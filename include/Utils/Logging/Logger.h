@@ -85,7 +85,7 @@ class Logger
         if (level <= Level::DEBUGGING)
         {
             auto msg = std::vformat(format, std::make_format_args(args...));
-            std::println("{}", Font::format(Theme::dim(Font::IT("{}{}")), prependInfoStr(), msg));
+            std::println("{}", Font::format(Theme::dim("{}{}"), prependInfoStr(), msg));
         }
     }
 
