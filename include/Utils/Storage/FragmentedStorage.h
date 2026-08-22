@@ -11,6 +11,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
@@ -45,15 +46,6 @@ class Fragment : public Traits::Stringify
     explicit Fragment(uint32_t start, uint32_t size) : start(start), size(size) {}
 
     virtual void setStart(uint32_t st) { start = st; };
-    // virtual void setBuffer(uint8_t* buf) {buffer = buf;}
-
-    // [[nodiscard]] std::string describe() const
-    // {
-    //     std::stringstream ss;
-    //     ss << "FragID: " << id << " [" << size << " bytes]";
-    //     return ss.str();
-    //     // return std::format(R"({})", name);
-    // }
 };
 
 template <typename T, size_t TSize>
@@ -212,6 +204,37 @@ class FragmentedStorage
         }
     }
 
+    void addMultiple(const std::shared_ptr<T> &prototype, int n, int start)
+    {
+        if (!prototype)
+        {
+            throw std::invalid_argument("Null prototype");
+        }
+
+        if (!checkMultiple(start, n, prototype->size))
+        {
+            throw std::runtime_error("Cant find valid position");
+        }
+
+        uint32_t curr = start;
+        for (int i = 0; i < n; i++)
+        {
+            // the last one can reuse the prototype if nobody else holds it
+            std::shared_ptr<T> frag = (i + 1 == n && prototype.use_count() == 1)
+                                          ? prototype
+                                          : std::make_shared<T>(*prototype);
+            frag->setStart(curr);
+            frag->id = m_fragmentsNum;
+            fillBytesPatched(curr, frag->start + frag->size);
+
+            auto before = numFragmentsBefore(curr);
+            auto it = std::next(m_fragments.begin(), before);
+            curr += frag->size;
+
+            m_fragments.insert(it, std::move(frag));
+        }
+    }
+
     void append(T newFragment)
     {
         const uint32_t offset =
@@ -241,9 +264,11 @@ class FragmentedStorage
         }
         const uint32_t start = (*it)->start;
         const uint32_t size = (*it)->size; // Mark the fragment's space
-        std::fill(m_bytesPatched.begin() + start, m_bytesPatched.begin() + start + size,
-                  0); // Remove the shared_ptr from the container. // If this is the last
-                      // shared_ptr owning the object, T is destroyed here.
+        std::fill(
+            m_bytesPatched.begin() + start, m_bytesPatched.begin() + start + size,
+            0
+        ); // Remove the shared_ptr from the container. // If this is the last
+           // shared_ptr owning the object, T is destroyed here.
         m_fragments.erase(it);
         return true;
     }
@@ -283,21 +308,24 @@ class FragmentedStorage
             {
                 // ss << std::format("{}[{:3}, {:3}]{} Unpatched{}\n", Colors::colorDim, 1,
                 // start, Colors::colorItalic, Colors::colorReset);
-                ss << std::format("[{:3}, {:3}] Free space [{} bytes]\n", curr, start - 1,
-                                  (start - curr));
+                ss << std::format(
+                    "[{:3}, {:3}] Free space [{} bytes]\n", curr, start - 1, (start - curr)
+                );
             }
             // ss << std::format("{}[{:3}, {:3}]{} \"{}\" FID: {} ({} bytes){}\n", col, start +
             // 1, start + fragment->size, Colors::colorItalic, fragment->name, fragment->id,
             // fragment->size, Colors::colorReset);
-            ss << std::format("[{:3}, {:3}] {}\n", start, start + fragment->size - 1,
-                              fragment->toString());
+            ss << std::format(
+                "[{:3}, {:3}] {}\n", start, start + fragment->size - 1, fragment->toString()
+            );
             curr = start + fragment->size;
         }
 
         if (curr != TSize - 1)
         {
-            ss << std::format("[{:3}, {:3}] Free space [{} bytes]\n", curr, TSize - 1,
-                              (TSize - curr));
+            ss << std::format(
+                "[{:3}, {:3}] Free space [{} bytes]\n", curr, TSize - 1, (TSize - curr)
+            );
         }
         return ss.str();
     }
