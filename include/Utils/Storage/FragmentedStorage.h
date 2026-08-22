@@ -64,24 +64,6 @@ class FragmentedStorage
         m_fragmentsNum++;
     }
 
-    bool checkMultiple(uint32_t start, uint32_t n, uint32_t size)
-    {
-        if (start + n * size > TSize)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < n * size; i++)
-        {
-            if (!isFree(i))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     uint32_t numFragmentsBefore(uint32_t start)
     {
         uint32_t counter = 0U;
@@ -130,6 +112,24 @@ class FragmentedStorage
     bool isFree(uint32_t index) { return m_bytesPatched[index] == 0; }
 
   public:
+    bool checkMultiple(uint32_t start, uint32_t n, uint32_t size)
+    {
+        if (start + n * size > TSize)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < n * size; i++)
+        {
+            if (!isFree(i))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     void add(T newFragment, uint32_t start)
     {
         bool isFilled = !isFree(start);
