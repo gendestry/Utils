@@ -30,7 +30,11 @@ int main()
 
     using namespace Font;
     auto test = RED("Test {}", GREEN("x: {}, y: {}"), " wowie");
-    std::cout << format(test, "neki", 2, 4.3f);
+    auto str = format(test, "neki", 2, 4.3f);
+    logger.printTime(true);
+    logger.debug(str);
+    logger.warn(str);
+    logger.error(str);
     return 0;
     // for (auto a : grad.get())
     // {

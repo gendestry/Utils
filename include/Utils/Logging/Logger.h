@@ -23,17 +23,19 @@ class Logger
     };
 
   private:
-    static uint32_t scopeSize;
+    static uint32_t s_scopeSize;
     static Level s_level;
+    static bool s_enableTime;
 
-    uint32_t m_padOffset = 0;
     Level m_level = NOTSET;
     std::string m_scope;
+    mutable std::string m_scopeCache;
+    uint32_t m_padOffset = 0;
 
-    mutable std::string usedScope;
-
-    std::string getScopePadding() const;
-    std::string scopePadding() const;
+    inline std::string paddingStr() const;
+    inline std::string scopeStr() const;
+    inline std::string timeStr() const;
+    inline std::string prependInfoStr() const;
 
   public:
     explicit Logger(std::string scope);
@@ -46,7 +48,7 @@ class Logger
     void decPadOffset();
 
     void toggleScope();
-    std::string scopeStr() const;
+    static void printTime(bool should);
 
     void print(const std::string &text) const;
     void println(const std::string &text) const;
@@ -54,27 +56,27 @@ class Logger
     template <typename... Args> void print(const std::string &format, Args &&...args) const
     {
         auto msg = std::vformat(format, std::make_format_args(args...));
-        std::print("{}{}", scopePadding(), msg);
+        std::print("{}{}", prependInfoStr(), msg);
     }
 
     template <typename... Args> void println(const std::string &format, Args &&...args) const
     {
         auto msg = std::vformat(format, std::make_format_args(args...));
-        std::println("{}{}", scopePadding(), msg);
+        std::println("{}{}", prependInfoStr(), msg);
     }
 
     template <typename... Args>
     void printColor(const std::string &color, const std::string &format, Args &&...args) const
     {
         auto msg = std::vformat(format, std::make_format_args(args...));
-        std::print("{}{}{}{}", scopePadding(), color, msg, Font::colorReset);
+        std::print("{}{}{}{}", prependInfoStr(), color, msg, Font::colorReset);
     }
 
     template <typename... Args>
     void printlnColor(const std::string &color, const std::string &format, Args &&...args) const
     {
         auto msg = std::vformat(format, std::make_format_args(args...));
-        std::println("{}{}{}{}", scopePadding(), color, msg, Font::colorReset);
+        std::println("{}{}{}{}", prependInfoStr(), color, msg, Font::colorReset);
     }
 
     template <typename... Args> void debug(const std::string &format, Args &&...args) const
@@ -83,7 +85,7 @@ class Logger
         if (level <= Level::DEBUGGING)
         {
             auto msg = std::vformat(format, std::make_format_args(args...));
-            std::println("{}", Font::format(Theme::dim(Font::IT("{}{}")), scopePadding(), msg));
+            std::println("{}", Font::format(Theme::dim(Font::IT("{}{}")), prependInfoStr(), msg));
         }
     }
 
@@ -93,14 +95,14 @@ class Logger
         if (level <= Level::INFO)
         {
             auto msg = std::vformat(format, std::make_format_args(args...));
-            std::println("{}", Font::format(Theme::warn("{}{}"), scopePadding(), msg));
+            std::println("{}", Font::format(Theme::warn("{}{}"), prependInfoStr(), msg));
         }
     }
 
     template <typename... Args> void error(const std::string &format, Args &&...args) const
     {
         auto msg = std::vformat(format, std::make_format_args(args...));
-        std::println("{}", Font::format(Theme::err("{}{}"), scopePadding(), msg));
+        std::println("{}", Font::format(Theme::err("{}{}"), prependInfoStr(), msg));
     }
 };
 } // namespace Utils

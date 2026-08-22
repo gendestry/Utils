@@ -3,95 +3,70 @@
 //
 
 #include "Utils/Logging/Logger.h"
-#include "Utils/Text/Stream.h"
+#include "Utils/Text/String.h"
+#include "Utils/Time/Time.h"
 
 namespace Utils
 {
-    uint32_t Logger::scopeSize = 0;
-    Logger::Level Logger::s_level = Level::ERROR;
+uint32_t Logger::s_scopeSize = 0;
+Logger::Level Logger::s_level = Level::ERROR;
+bool Logger::s_enableTime = false;
 
-    Logger::Logger(std::string scope)
-        : m_scope(std::move(scope))
+Logger::Logger(std::string scope) : m_scope(std::move(scope))
+{
+    if (scope.size() > s_scopeSize)
     {
-        if(scope.size() > scopeSize)
-        {
-            scopeSize = scope.size();
-        }
-        toggleScope();
+        s_scopeSize = scope.size();
     }
+    toggleScope();
+}
 
-    Logger::Logger(Logger& other, std::string scope)
+Logger::Logger(Logger &other, std::string scope)
+{
+    m_scope = other.m_scope + scope;
+    if (scope.size() > s_scopeSize)
     {
-        m_scope = other.m_scope + scope;
-        if(scope.size() > scopeSize)
-        {
-            scopeSize = scope.size();
-        }
-        toggleScope();
+        s_scopeSize = scope.size();
     }
+    toggleScope();
+}
 
-    void Logger::setLevel(Level level)
+void Logger::setLevel(Level level) { s_level = level; }
+
+void Logger::setLoggerLevel(Level level) { m_level = level; }
+
+void Logger::incPadOffset() { m_padOffset++; }
+
+void Logger::decPadOffset() { m_padOffset--; }
+
+void Logger::toggleScope()
+{
+    if (m_scopeCache.empty())
     {
-        s_level = level;
+        m_scopeCache = scopeStr();
     }
-
-    void Logger::setLoggerLevel(Level level)
+    else
     {
-        m_level = level;
-    }
-
-    void Logger::incPadOffset()
-    {
-        m_padOffset++;
-    }
-
-    void Logger::decPadOffset()
-    {
-        m_padOffset--;
-    }
-
-    std::string Logger::scopePadding() const
-    {
-        return usedScope + String::pad(m_padOffset, "  ");
-    }
-
-
-
-    std::string Logger::getScopePadding() const
-    {
-        // Utils::Stream s;
-        // for(uint32_t i = 0; i < (9 - m_scope.size()); i++){
-        //     s<< " ";
-        // }
-
-        // return s.end();
-        return "";
-    }
-
-    void Logger::toggleScope()
-    {
-        if(usedScope.empty())
-        {
-            usedScope = Utils::String::concat("[", m_scope, getScopePadding(), "] ");
-        }
-        else
-        {
-            usedScope.clear();
-        }
-    }
-
-    std::string Logger::scopeStr() const
-    {
-        return "[" + m_scope + getScopePadding() + "] ";
-    }
-
-    void Logger::print(const std::string& text) const
-    {
-        std::print("{}{}", scopePadding(), text);
-    }
-
-    void Logger::println(const std::string& text) const
-    {
-        std::println("{}{}", scopePadding(), text);
+        m_scopeCache.clear();
     }
 }
+
+void Logger::printTime(bool should) { s_enableTime = should; }
+
+void Logger::print(const std::string &text) const { std::print("{}{}", prependInfoStr(), text); }
+
+void Logger::println(const std::string &text) const
+{
+    std::println("{}{}", prependInfoStr(), text);
+}
+
+std::string Logger::paddingStr() const { return String::pad(m_padOffset, "  "); }
+std::string Logger::scopeStr() const { return String::format("[{}]", m_scope); };
+std::string Logger::timeStr() const { return Utils::String::format("[{}] ", Time().toString()); };
+std::string Logger::prependInfoStr() const
+{
+    std::string time = s_enableTime ? timeStr() : "";
+    return String::format("{}{}{} ", time, scopeStr(), paddingStr());
+};
+
+} // namespace Utils

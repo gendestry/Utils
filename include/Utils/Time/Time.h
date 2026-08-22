@@ -40,9 +40,9 @@ struct Time
     std::string toString() const
     {
         Utils::Text::Stream s;
-        s << (hours < 10 ? "0" : "") << hours << ":";
-        s << (minutes < 10 ? "0" : "") << minutes << ":";
-        s << (seconds < 10 ? "0" : "") << seconds;
+        s << (hours < 10 ? "0" : "") << std::to_string(hours) << ":";
+        s << (minutes < 10 ? "0" : "") << std::to_string(minutes) << ":";
+        s << (seconds < 10 ? "0" : "") << std::to_string(seconds);
         return s.end();
     }
 };
