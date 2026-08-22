@@ -35,7 +35,7 @@ class Logger
     inline std::string paddingStr() const;
     inline std::string scopeStr() const;
     inline std::string timeStr() const;
-    inline std::string prependInfoStr() const;
+    std::string prependInfoStr() const;
 
   public:
     explicit Logger(std::string scope);
