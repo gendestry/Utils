@@ -29,6 +29,7 @@ template <typename T> class IDGenerator
     }
 
     uint64_t getUID() const { return m_id; }
+    static void resetUID() { id_generator = 0; }
 
   private:
     static uint64_t id_generator;
