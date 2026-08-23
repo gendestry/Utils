@@ -39,7 +39,9 @@ template <typename... Args> std::vector<FormatExpr> collectChildren(Args &&...ar
 
     auto add = [&]<typename T>(T &&arg)
     {
-        if constexpr (std::is_same_v<T, FormatExpr>)
+        using TDecayed = std::decay_t<T>;
+
+        if constexpr (std::is_same_v<TDecayed, FormatExpr>)
         {
             children.emplace_back(std::forward<T>(arg));
         }
