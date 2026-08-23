@@ -37,13 +37,11 @@ template <typename... Args> std::vector<FormatExpr> collectChildren(Args &&...ar
 
     children.reserve(sizeof...(Args));
 
-    auto add = [&](auto &&arg)
+    auto add = [&]<typename T>(T &&arg)
     {
-        using T = std::decay_t<decltype(arg)>;
-
         if constexpr (std::is_same_v<T, FormatExpr>)
         {
-            children.emplace_back(std::forward<decltype(arg)>(arg));
+            children.emplace_back(std::forward<T>(arg));
         }
         else
         {
