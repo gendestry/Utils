@@ -64,6 +64,10 @@ class IntervalBase : public Traits::Stringify
 
     [[nodiscard]] std::string toString() const override
     {
+        if (start == end)
+        {
+            return Utils::String::format("{}", end);
+        }
         return Utils::String::format("{}...{}", start, end);
     }
 };
