@@ -35,7 +35,7 @@ class Logger
     inline std::string paddingStr() const;
     inline std::string scopeStr() const;
     inline std::string timeStr() const;
-    std::string prependInfoStr() const;
+    std::string prependInfoStr(const std::string &level) const;
 
   public:
     explicit Logger(std::string scope);
@@ -56,27 +56,27 @@ class Logger
     template <typename... Args> void print(const std::string &format, Args &&...args) const
     {
         auto msg = std::vformat(format, std::make_format_args(args...));
-        std::print("{}{}", prependInfoStr(), msg);
+        std::print("{}{}", prependInfoStr(""), msg);
     }
 
     template <typename... Args> void println(const std::string &format, Args &&...args) const
     {
         auto msg = std::vformat(format, std::make_format_args(args...));
-        std::println("{}{}", prependInfoStr(), msg);
+        std::println("{}{}", prependInfoStr(""), msg);
     }
 
     template <typename... Args>
     void printColor(const std::string &color, const std::string &format, Args &&...args) const
     {
         auto msg = std::vformat(format, std::make_format_args(args...));
-        std::print("{}{}{}{}", prependInfoStr(), color, msg, Font::colorReset);
+        std::print("{}{}{}{}", prependInfoStr(""), color, msg, Font::colorReset);
     }
 
     template <typename... Args>
     void printlnColor(const std::string &color, const std::string &format, Args &&...args) const
     {
         auto msg = std::vformat(format, std::make_format_args(args...));
-        std::println("{}{}{}{}", prependInfoStr(), color, msg, Font::colorReset);
+        std::println("{}{}{}{}", prependInfoStr(""), color, msg, Font::colorReset);
     }
 
     template <typename... Args> void debug(const std::string &format, Args &&...args) const
@@ -85,7 +85,9 @@ class Logger
         if (level <= Level::DEBUGGING)
         {
             auto msg = std::vformat(format, std::make_format_args(args...));
-            std::println("{}", Font::format(Theme::dim("{}{}"), prependInfoStr(), msg));
+            auto dim = Font::format(Theme::dim("DEBUG"));
+            std::println("{} {}", prependInfoStr(dim), msg);
+            // std::println("{}", Font::format(Theme::dim("{}{}"), prependInfoStr(), msg));
         }
     }
 
@@ -95,14 +97,16 @@ class Logger
         if (level <= Level::INFO)
         {
             auto msg = std::vformat(format, std::make_format_args(args...));
-            std::println("{}", Font::format(Theme::warn("{}{}"), prependInfoStr(), msg));
+            auto warn = Font::format(Theme::warn("WARN "));
+            std::println("{} {}", prependInfoStr(warn), msg);
         }
     }
 
     template <typename... Args> void error(const std::string &format, Args &&...args) const
     {
         auto msg = std::vformat(format, std::make_format_args(args...));
-        std::println("{}", Font::format(Theme::err("{}{}"), prependInfoStr(), msg));
+        auto err = Font::format(Theme::err("ERROR"));
+        std::println("{} {}", prependInfoStr(err), msg);
     }
 };
 } // namespace Utils

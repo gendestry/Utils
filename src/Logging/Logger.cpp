@@ -53,20 +53,34 @@ void Logger::toggleScope()
 
 void Logger::printTime(bool should) { s_enableTime = should; }
 
-void Logger::print(const std::string &text) const { std::print("{}{}", prependInfoStr(), text); }
+void Logger::print(const std::string &text) const { std::print("{}{}", prependInfoStr(""), text); }
 
 void Logger::println(const std::string &text) const
 {
-    std::println("{}{}", prependInfoStr(), text);
+    std::println("{}{}", prependInfoStr(""), text);
 }
 
 std::string Logger::paddingStr() const { return String::pad(m_padOffset, "  "); }
-std::string Logger::scopeStr() const { return String::format("[{}]", m_scope); };
-std::string Logger::timeStr() const { return Utils::String::format("[{}] ", Time().toString()); };
-std::string Logger::prependInfoStr() const
+std::string Logger::scopeStr() const
 {
-    std::string time = s_enableTime ? timeStr() : "";
-    return String::format("{}{}{} ", time, scopeStr(), paddingStr());
+    return String::format("[{}]", Font::format(Theme::lime(m_scope)));
 };
+std::string Logger::timeStr() const
+{
+    std::string time = s_enableTime ? Utils::String::format("[{}] ", Time().toString()) : "";
+    return time;
+}
+std::string Logger::prependInfoStr(const std::string &level) const
+{
+    std::string s = level;
+
+    if (!level.empty())
+    {
+        // std::string t = Utils::String::padUntilLen(level, 5, " ");
+        s = std::format("[{:<5}] ", s);
+    }
+
+    return String::format("{}{}{}{}", timeStr(), s, scopeStr(), paddingStr());
+}
 
 } // namespace Utils

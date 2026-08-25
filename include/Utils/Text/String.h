@@ -35,6 +35,7 @@ class String
     static std::vector<std::string> split(const std::string &str, const std::string &delimiter);
     static std::string normalize_spaces(const std::string &input);
     static std::string pad(uint32_t n, std::string by);
+    static std::string padUntilLen(const std::string &str, uint32_t n, std::string by);
     static std::string colorWrap(const std::string &color, const std::string &text);
 };
 

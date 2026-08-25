@@ -29,8 +29,8 @@ int main()
     logger.setLoggerLevel(Utils::Logger::DEBUGGING);
 
     using namespace Font;
-    auto test = RED("Test {}", GREEN("x: {}, y: {}"), " wowie");
-    auto str = format(test, "neki", 2, 4.3f);
+    // auto test = RED("Test {}", GREEN("x: {}, y: {}"), " wowie");
+    std::string str = std::format("Test {} x: {}, y: {}", "neki", 2, 4.3f);
     logger.printTime(true);
     logger.debug(str);
     logger.warn(str);

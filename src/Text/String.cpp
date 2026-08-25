@@ -39,8 +39,8 @@ bool Utils::String::isInt(const std::string &s)
 //     return result;
 // }
 
-std::vector<std::string> Utils::String::split(const std::string &input,
-                                              const std::string &delimiters)
+std::vector<std::string>
+Utils::String::split(const std::string &input, const std::string &delimiters)
 {
     std::vector<std::string> result;
     std::string current;
@@ -134,6 +134,18 @@ std::string Utils::String::pad(uint32_t n, std::string by)
 {
     std::stringstream s;
     for (uint32_t i = 0; i < n; i++)
+    {
+        s << by;
+    }
+
+    return s.str();
+}
+
+std::string Utils::String::padUntilLen(const std::string &str, uint32_t n, std::string by)
+{
+    std::stringstream s;
+    s << str;
+    for (uint32_t i = 0; i < n - str.length(); i++)
     {
         s << by;
     }
