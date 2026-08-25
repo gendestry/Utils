@@ -19,7 +19,8 @@ class Logger
         NOTSET = 0U,
         DEBUGGING = 1U,
         INFO = 2U,
-        ERROR = 3U,
+        WARN = 3U,
+        ERROR = 4U,
     };
 
   private:
@@ -91,10 +92,21 @@ class Logger
         }
     }
 
-    template <typename... Args> void warn(const std::string &format, Args &&...args) const
+    template <typename... Args> void info(const std::string &format, Args &&...args) const
     {
         const Level level = m_level == NOTSET ? s_level : m_level;
         if (level <= Level::INFO)
+        {
+            auto msg = std::vformat(format, std::make_format_args(args...));
+            std::println("{} {}", prependInfoStr("INFO"), msg);
+            // std::println("{}", Font::format(Theme::dim("{}{}"), prependInfoStr(), msg));
+        }
+    }
+
+    template <typename... Args> void warn(const std::string &format, Args &&...args) const
+    {
+        const Level level = m_level == NOTSET ? s_level : m_level;
+        if (level <= Level::WARN)
         {
             auto msg = std::vformat(format, std::make_format_args(args...));
             auto warn = Font::format(Theme::warn("WARN "));
