@@ -77,7 +77,8 @@ std::string Logger::prependInfoStr(const std::string &level) const
     if (!level.empty())
     {
         // std::string t = Utils::String::padUntilLen(level, 5, " ");
-        s = std::format("[{:<5}] ", s);
+        s = std::format("[{}] ", level);
+        // s = std::format("[{}] ", Utils::String::padUntilLen(level, 3, " "));
     }
 
     return String::format("{}{}{}{}", timeStr(), s, scopeStr(), paddingStr());
