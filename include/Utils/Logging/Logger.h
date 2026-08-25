@@ -102,6 +102,18 @@ class Logger
         }
     }
 
+    template <typename... Args> void success(const std::string &format, Args &&...args) const
+    {
+        const Level level = m_level == NOTSET ? s_level : m_level;
+        if (level <= Level::DEBUGGING)
+        {
+            auto msg = std::vformat(format, std::make_format_args(args...));
+            auto dim = Font::format(Theme::ok("SUCCESS"));
+            std::println("{} {}", prependInfoStr(dim), msg);
+            // std::println("{}", Font::format(Theme::dim("{}{}"), prependInfoStr(), msg));
+        }
+    }
+
     template <typename... Args> void error(const std::string &format, Args &&...args) const
     {
         auto msg = std::vformat(format, std::make_format_args(args...));
