@@ -8,6 +8,7 @@
 #include "Utils/Colors/Theme.h"
 #include <cstdint>
 #include <format>
+#include <optional>
 #include <print>
 #include <source_location>
 #include <string>
@@ -37,6 +38,7 @@ class Logger
 
     static uint32_t s_scopeSize;
     static Level s_level;
+    static Logging::Formatter s_formatter;
 
     Level m_level = NOTSET;
     std::string m_scope;
@@ -48,7 +50,10 @@ class Logger
     std::string prependInfoStr(const std::string &level, const std::source_location *loc = nullptr) const;
 
 
-    Logging::Formatter m_formatter{"%H:%M:%S [%l] [%@] [%n] %v"};   // replaces the hardcoded layout
+    // Engaged only when this logger overrides the shared pattern; see s_formatter.
+    std::optional<Logging::Formatter> m_formatter;
+
+    const Logging::Formatter &formatter() const { return m_formatter ? *m_formatter : s_formatter; }
 
     template <typename... Args>
     void log(Level msgLevel, const std::string &label,
@@ -65,17 +70,15 @@ class Logger
             .msg      = std::vformat(format.fmt(), std::make_format_args(args...)),
         };
 
-        std::println("{}{}", paddingStr(), m_formatter.render(rec));
+        std::println("{}{}", paddingStr(), formatter().render(rec));
     }
 
   public:
     explicit Logger(std::string scope);
     explicit Logger(Logger &other, std::string scope);
 
-    void setFormat(const std::string& format)
-    {
-        m_formatter.setPattern(format);
-    }
+    static void setFormat(const std::string &pattern);
+    void setLoggerFormat(const std::string &pattern);
 
     static void setLevel(Level level);
     void setLoggerLevel(Level level);
