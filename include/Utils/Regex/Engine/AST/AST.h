@@ -19,6 +19,7 @@ namespace Utils::Regex::Engine
 
     struct MatchInfo {
         unsigned int start;
+        unsigned int len;
         std::string match;
         std::string fullmatch;
 
@@ -26,18 +27,28 @@ namespace Utils::Regex::Engine
 
         MatchInfo(){}
         MatchInfo(unsigned int start, std::string match)
-            : start(start), match(match) {}
+            : start(start), match(match), len(match.length()) {}
         MatchInfo(unsigned int start, std::string match, std::string fullmatch)
-            : start(start), match(match), fullmatch(fullmatch) {}
+            : start(start), match(match), fullmatch(fullmatch), len(match.length()) {}
 
+        unsigned int end() const
+        {
+            return start + len-1;
+        }
         std::string toString() {
             Utils::Text::Stream s;
             // s << match << "\n[";
-            s << "[" << match << " ";
-            for (auto group : groups) {
-                s << group.toString() << "";
+            s << "[" << match;
+            if (!groups.empty())
+            {
+                s << " ";
+                for(auto group : groups) {
+                    s << group.toString() << "";
+                }
             }
+
             s << "]";
+            s << std::format("(s:{},e:{})", start, end());
             return s.end();
         }
     };

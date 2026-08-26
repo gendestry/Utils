@@ -4,6 +4,7 @@
 
 #pragma once
 #include "Location.h"
+#include "Format.h"
 #include "Utils/Colors/Theme.h"
 #include <cstdint>
 #include <format>
@@ -36,49 +37,51 @@ class Logger
 
     static uint32_t s_scopeSize;
     static Level s_level;
-    static bool s_enableTime;
-    static bool s_enableLocation;
 
     Level m_level = NOTSET;
     std::string m_scope;
-    mutable std::string m_scopeCache;
     uint32_t m_padOffset = 0;
 
-    inline std::string paddingStr() const;
-    inline std::string scopeStr() const;
-    inline std::string timeStr() const;
+    std::string paddingStr() const;
+    std::string scopeStr() const;
     std::string locationStr(const std::source_location &loc) const;
-    std::string
-    prependInfoStr(const std::string &level, const std::source_location *loc = nullptr) const;
+    std::string prependInfoStr(const std::string &level, const std::source_location *loc = nullptr) const;
 
-    // void log(Tag tag, const std::source_location &loc, const std::string &msg) const;
+
+    Logging::Formatter m_formatter{"%H:%M:%S [%l] [%@] [%n] %v"};   // replaces the hardcoded layout
 
     template <typename... Args>
-    void
-    log(Level msgLevel, const std::string &label, const Logging::FormatWithLocation &format,
-        Args &&...args) const
+    void log(Level msgLevel, const std::string &label,
+             const Logging::FormatWithLocation &format, Args &&...args) const
     {
         const Level level = m_level == NOTSET ? s_level : m_level;
-        if (level <= msgLevel)
-        {
-            auto msg = std::vformat(format.fmt(), std::make_format_args(args...));
-            std::println("{} {}", prependInfoStr(label, &format.location), msg);
-        }
+        if (level > msgLevel)
+            return;
+
+        const Logging::Record rec{
+            .level    = label,                                       // already colored by the caller
+            .scope    = Font::format(Theme::lime(m_scope)),
+            .location = locationStr(format.location),
+            .msg      = std::vformat(format.fmt(), std::make_format_args(args...)),
+        };
+
+        std::println("{}{}", paddingStr(), m_formatter.render(rec));
     }
 
   public:
     explicit Logger(std::string scope);
     explicit Logger(Logger &other, std::string scope);
 
+    void setFormat(const std::string& format)
+    {
+        m_formatter.setPattern(format);
+    }
+
     static void setLevel(Level level);
     void setLoggerLevel(Level level);
 
     void incPadOffset();
     void decPadOffset();
-
-    void toggleScope();
-    static void printTime(bool should);
-    static void printLocation(bool should);
 
     void print(const std::string &text) const;
     void println(const std::string &text) const;

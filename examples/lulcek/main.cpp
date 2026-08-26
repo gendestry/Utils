@@ -16,6 +16,7 @@
 // #include "Network/SACN.h"
 // #include "Text/Stream.h"
 #include "Utils/Colors/ColorFormatter.h"
+#include "Utils/Logging/Format.h"
 #include "Utils/Math/Interval.h"
 #include <array>
 #include <chrono>
@@ -28,10 +29,40 @@ int main()
     Utils::Logger logger("Main");
     logger.setLoggerLevel(Utils::Logger::DEBUGGING);
 
+    auto pattern = "%H:%M:%S asd %i";
+    // Utils::Regex::Matcher flagRegex(R"('%'\T)");
+    // auto matches = flagRegex.findAllInfo(pattern);
+    // if (!matches) { return 1; }
+    //
+    // std::size_t pos = 0;
+    // std::string m_format = "";
+    // for (auto& m : *matches)
+    // {
+    //     logger.info("{}", m.toString());
+    //     m_format.append(pattern, pos, m.start - pos); // text before the flag
+    //     m_format += "{}";
+    //     // m_flags.push_back(m.match.back());            // the char after '%'
+    //     pos = m.start + m.len;
+    // }
+    //
+    // m_format.append(pattern, pos);                    // trailing text
+    // logger.info("{}", pattern);
+    // logger.info("{}", m_format);
+    // Logging::Formatter f("%H:%M:%S asd");
+    // logger.println(f.render());
+    // f.print();
+    // f.parse();
+    // logger.warn(f.m_format);
+    // logger.info("format: '{}'", f.braceFormat());
+    // f.forEachPart([&](std::string_view literal, char flag)
+    //               { logger.info("literal: '{}' flag: '{}'", literal, flag); });
+
+    // return 0;
+
+
     using namespace Font;
     // auto test = RED("Test {}", GREEN("x: {}, y: {}"), " wowie");
     std::string str = std::format("Test {} x: {}, y: {}", "neki", 2, 4.3f);
-    logger.printTime(true);
     logger.debug(str);
     logger.warn(str);
     logger.error(str);
