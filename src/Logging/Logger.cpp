@@ -11,6 +11,7 @@ namespace Utils
 uint32_t Logger::s_scopeSize = 0;
 Logger::Level Logger::s_level = Level::ERROR;
 bool Logger::s_enableTime = false;
+bool Logger::s_enableLocation = true;
 
 Logger::Logger(std::string scope) : m_scope(std::move(scope))
 {
@@ -52,6 +53,7 @@ void Logger::toggleScope()
 }
 
 void Logger::printTime(bool should) { s_enableTime = should; }
+void Logger::printLocation(bool should) { s_enableLocation = should; }
 
 void Logger::print(const std::string &text) const { std::print("{}{}", prependInfoStr(""), text); }
 
@@ -70,18 +72,32 @@ std::string Logger::timeStr() const
     std::string time = s_enableTime ? Utils::String::format("[{}] ", Time().toString()) : "";
     return time;
 }
-std::string Logger::prependInfoStr(const std::string &level) const
+std::string Logger::locationStr(const std::source_location &loc) const
 {
-    std::string s = level;
+    if (!s_enableLocation)
+        return "";
 
-    if (!level.empty())
+    // file_name() is the compiler's full path; keep only the basename.
+    std::string_view file = loc.file_name();
+    if (const auto pos = file.find_last_of("/\\"); pos != std::string_view::npos)
     {
-        // std::string t = Utils::String::padUntilLen(level, 5, " ");
-        s = std::format("[{}] ", level);
-        // s = std::format("[{}] ", Utils::String::padUntilLen(level, 3, " "));
+        file.remove_prefix(pos + 1);
     }
 
-    return String::format("{}{}{}{}", timeStr(), s, scopeStr(), paddingStr());
+    return String::format("[{}] ", Font::format(c_meta(std::format("{}:{}", file, loc.line()))));
+}
+
+std::string Logger::prependInfoStr(const std::string &level, const std::source_location *loc) const
+{
+    std::string s = level;
+    if (!level.empty())
+    {
+        s = std::format("[{}] ", level);
+    }
+
+    const std::string location = loc != nullptr ? locationStr(*loc) : "";
+
+    return String::format("{}{}{}{}{}", timeStr(), s, location, scopeStr(), paddingStr());
 }
 
 } // namespace Utils

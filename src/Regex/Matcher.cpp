@@ -1,420 +1,435 @@
-#include <iostream>
 #include "Utils/Regex/Matcher.h"
 #include "Utils/Colors/Font.h"
+#include <iostream>
 
 using namespace Utils;
 using namespace Utils::Regex::Engine;
 
 namespace Utils::Regex
 {
-    Matcher::Matcher(const std::string& pattern) : m_Pattern(pattern), logger("matcher")
+Matcher::Matcher(const std::string &pattern) : m_Pattern(pattern), logger("matcher")
+{
+    logger.setLoggerLevel(Logger::DEBUGGING);
+    m_Tokenizer = std::make_unique<Engine::Tokenizer>(pattern);
+    m_Tokenizer->tokenize();
+
+    m_Syntax = std::make_unique<Engine::Syntax>(m_Tokenizer->get_tokens());
+    m_Valid = m_Syntax->parse();
+
+    if (!m_Valid)
     {
-        logger.setLoggerLevel(Logger::DEBUGGING);
-        m_Tokenizer = std::make_unique<Engine::Tokenizer>(pattern);
-        m_Tokenizer->tokenize();
+        throw std::runtime_error("Error: invalid regex syntax");
+    }
+}
 
-        m_Syntax = std::make_unique<Engine::Syntax>(m_Tokenizer->get_tokens());
-        m_Valid = m_Syntax->parse();
+Matcher::Matcher(const Matcher &other)
+    : m_Pattern(other.m_Pattern), m_Valid(other.m_Valid),
+      m_Tokenizer(std::make_unique<Engine::Tokenizer>(*other.m_Tokenizer)),
+      m_Syntax(std::make_unique<Engine::Syntax>(*other.m_Syntax)), logger("matcher")
+{
+}
 
-        if (!m_Valid)
+Matcher::Matcher(Matcher &&other) noexcept
+    : m_Pattern(std::move(other.m_Pattern)), m_Tokenizer(std::move(other.m_Tokenizer)),
+      m_Syntax(std::move(other.m_Syntax)), m_Valid(other.m_Valid), logger("matcher")
+{
+}
+
+// operators
+Matcher &Matcher::operator=(const Matcher &other)
+{
+    if (this != &other)
+    {
+        m_Pattern = other.m_Pattern;
+        m_Valid = other.m_Valid;
+        m_Tokenizer = std::make_unique<Engine::Tokenizer>(*other.m_Tokenizer);
+        m_Syntax = std::make_unique<Engine::Syntax>(*other.m_Syntax);
+    }
+
+    return *this;
+}
+
+Matcher &Matcher::operator=(Matcher &&other) noexcept
+{
+    if (this != &other)
+    {
+        m_Pattern = std::move(other.m_Pattern);
+        m_Tokenizer = std::move(other.m_Tokenizer);
+        m_Syntax = std::move(other.m_Syntax);
+        m_Valid = other.m_Valid;
+    }
+
+    return *this;
+}
+
+const std::string &Matcher::getPattern() const { return m_Pattern; }
+
+bool Matcher::match(const std::string &text) const
+{
+    if (!m_Valid)
+        return false;
+
+    std::string match;
+    Engine::Pattern &pattern = m_Syntax->getPattern();
+    unsigned int start = 0;
+
+    for (auto &i : pattern)
+    {
+        PRINT(std::cout << "\n   Matching: " << i->toPrettyString() << " => ";)
+
+        auto [matched, current] = i->match(text, start);
+        if (matched)
         {
-            throw std::runtime_error("Error: invalid regex syntax");
+            const std::string matchedText = text.substr(start, current - start);
+            PRINT(std::cout << "Matched: '" << matchedText << "' ";)
+            match += matchedText;
         }
-    }
-
-    Matcher::Matcher(const Matcher &other)
-        : m_Pattern(other.m_Pattern),
-          m_Valid(other.m_Valid),
-          m_Tokenizer(std::make_unique<Engine::Tokenizer>(*other.m_Tokenizer)),
-          m_Syntax(std::make_unique<Engine::Syntax>(*other.m_Syntax)),
-          logger("matcher")
-    {
-    }
-
-    Matcher::Matcher(Matcher &&other) noexcept
-        : m_Pattern(std::move(other.m_Pattern)),
-          m_Tokenizer(std::move(other.m_Tokenizer)),
-          m_Syntax(std::move(other.m_Syntax)),
-    m_Valid(other.m_Valid),
-    logger("matcher")
-    {
-    }
-
-    // operators
-    Matcher &Matcher::operator=(const Matcher &other)
-    {
-        if (this != &other)
+        else
         {
-            m_Pattern = other.m_Pattern;
-            m_Valid = other.m_Valid;
-            m_Tokenizer = std::make_unique<Engine::Tokenizer>(*other.m_Tokenizer);
-            m_Syntax = std::make_unique<Engine::Syntax>(*other.m_Syntax);
-        }
-
-        return *this;
-    }
-
-    Matcher &Matcher::operator=(Matcher &&other) noexcept
-    {
-        if (this != &other)
-        {
-            m_Pattern = std::move(other.m_Pattern);
-            m_Tokenizer = std::move(other.m_Tokenizer);
-            m_Syntax = std::move(other.m_Syntax);
-            m_Valid = other.m_Valid;
-        }
-
-        return *this;
-    }
-
-    const std::string &Matcher::getPattern() const
-    {
-        return m_Pattern;
-    }
-
-    bool Matcher::match(const std::string &text) const
-    {
-        if (!m_Valid)
+            PRINT(std::cout << "Not matched" << std::endl;)
             return false;
-
-        std::string match;
-        Engine::Pattern &pattern = m_Syntax->getPattern();
-        unsigned int start = 0;
-
-        for (auto & i : pattern)
-        {
-            PRINT(std::cout << "\n   Matching: " << i->toPrettyString() << " => ";)
-
-            auto [matched, current] = i->match(text, start);
-            if (matched)
-            {
-                const std::string matchedText = text.substr(start, current - start);
-                PRINT(std::cout << "Matched: '" << matchedText << "' ";)
-                match += matchedText;
-            }
-            else
-            {
-                PRINT(std::cout << "Not matched" << std::endl;)
-                return false;
-            }
-            start = current;
         }
-
-        return match.size() == text.size();
+        start = current;
     }
 
-    std::optional<Engine::MatchInfo> Matcher::matchInfo(const std::string &text) const
+    return match.size() == text.size();
+}
+
+std::optional<Engine::MatchInfo> Matcher::matchInfo(const std::string &text) const
+{
+    if (!m_Valid)
+        return {};
+
+    MatchInfo ret;
+    ret.start = 0;
+
+    std::string match;
+    Engine::Pattern &pattern = m_Syntax->getPattern();
+    unsigned int start = 0;
+
+    for (auto &i : pattern)
     {
-        if (!m_Valid)
-            return {};
+        PRINT(std::cout << "\n   Matching: " << i->toPrettyString() << " => ";)
 
-        MatchInfo ret;
-        ret.start = 0;
-
-        std::string match;
-        Engine::Pattern &pattern = m_Syntax->getPattern();
-        unsigned int start = 0;
-
-        for (auto & i : pattern)
+        auto [matched, current] = i->match(text, start);
+        if (matched)
         {
-            PRINT(std::cout << "\n   Matching: " << i->toPrettyString() << " => ";)
-
-            auto [matched, current] = i->match(text, start);
-            if (matched)
-            {
-                const std::string matchedText = text.substr(start, current - start);
-                PRINT(std::cout << "Matched: '" << matchedText << "' ";)
-                match += matchedText;
-            }
-            else
-            {
-                PRINT(std::cout << "Not matched" << std::endl;)
-                return {};
-            }
-            start = current;
+            const std::string matchedText = text.substr(start, current - start);
+            PRINT(std::cout << "Matched: '" << matchedText << "' ";)
+            match += matchedText;
         }
-
-        if( match.size() == 0)
+        else
         {
+            PRINT(std::cout << "Not matched" << std::endl;)
             return {};
         }
-
-        ret.match = match;
-        return ret;
+        start = current;
     }
 
-
-    std::optional<MatchInfo> Matcher::matchGroups(const std::string &text) const {
-        if (!m_Valid)
-            return {};
-
-        MatchInfo ret;
-
-        Engine::Pattern &patterns = m_Syntax->getPattern();
-        unsigned int start = 0;
-
-        std::string ctext = std::string(text);
-        unsigned int subs = 0;
-        Engine::Pos i = 0;
-        for (; i < patterns.size(); i++)
-        {
-            auto& pattern = patterns[i];
-            logger.debug("\nMatching: {} => ", pattern->toPrettyString());
-
-            auto [matched, current] = pattern->match(ctext, start, patterns.size()>1);
-            if (matched)
-            {
-                std::string matchedText = ctext.substr(start, current - start);
-                logger.debug("Matcher: '{}' ", matchedText);
-                if (matchedText.empty()) {
-                    continue;
-                }
-
-                if (pattern->shouldIgnore()) {
-                    // ret.groups[0].push_back(matchedText);
-                }
-                else if (pattern->shouldCapture()) {
-                    ret.groups.push_back(MatchInfo(start, matchedText));
-                    ret.match += matchedText;
-                }
-                else {
-                    ret.match += matchedText;
-                }
-                ret.fullmatch += matchedText;
-            }
-            else
-            {
-                logger.debug("Not matched");
-                // PRINT(std::cout << "Not matched" << std::endl;)
-                if (ctext.size() == 1) {
-                    break;
-                }
-                ctext = ctext.substr(1);
-                subs++;
-                i--;
-            }
-            start = current;
-        }
-
-        if (i < patterns.size()) {
-            return {};
-        }
-        // m_MaxMatch = start;
-        if (ret.fullmatch.size() != text.size())
-            return std::nullopt;
-
-        ret.start = subs;
-        return ret;
-    }
-
-    std::optional<MatchInfo> Matcher::matchGroupsInfo(const std::string &text) const {
-        if (!m_Valid)
-            return {};
-
-        MatchInfo ret;
-        // int group = 0;
-
-        Engine::Pattern &patterns = m_Syntax->getPattern();
-        unsigned int start = 0;
-        auto current = start;
-        std::vector<std::vector<MatchInfo>> groups;
-
-
-        std::string ctext = std::string(text);
-        unsigned int subs = 0;
-        Engine::Pos i = 0;
-        for (; i < patterns.size(); i++)
-        {
-            auto& pattern = patterns[i];
-            logger.debug("Matching: {} => ", pattern->toPrettyString());
-
-            auto match = pattern->match_info(ctext, start, patterns.size()>1);
-            bool matched = match.has_value();
-
-            if (matched)
-            {
-                current = match->start;
-                std::string matchedText = match->match;
-                logger.debug("Matched: '{}' ", matchedText);
-
-                // if (!match->groups.empty()) {
-                //     groups.push_back(match->groups);
-                //     for (auto& group : match->groups) {
-                //         std::cout << group.match << std::endl;
-                //     }
-                // }
-
-                if (matchedText.empty()) {
-                    continue;
-                }
-
-                if (pattern->shouldIgnore()) {
-                    // ret.groups[0].push_back(matchedText);
-                }
-                if (!match->groups.empty()) {
-                    ret.groups.push_back(match.value());
-                    ret.match += match->match;
-                }
-                // else if (pattern->shouldCapture()) {
-                //     ret.groups.push_back(MatchInfo(start, matchedText));
-                //     ret.match += matchedText;
-                // }
-                else {
-                    ret.match += matchedText;
-                }
-                ret.fullmatch += matchedText;
-            }
-            else
-            {
-                logger.debug("Not matched");
-                // PRINT(std::cout << "Not matched" << std::endl;)
-                if (ctext.size() == 1) {
-                    break;
-                }
-                ctext = ctext.substr(1);
-                subs++;
-                i--;
-            }
-            start = current;
-        }
-
-        if (i < patterns.size()) {
-            return {};
-        }
-        // m_MaxMatch = start;
-        if (ret.match.size() != text.size())
-            return std::nullopt;
-
-        ret.start = subs;
-        return ret;
-    }
-
-    std::optional<std::string> Matcher::find(const std::string &text) const {
-        if (auto info = findInfo(text); info.has_value()) {
-            return info.value().match;
-        }
-
+    if (match.size() == 0)
+    {
         return {};
     }
 
-    std::optional<MatchInfo> Matcher::findInfo(const std::string &text) const {
-        if (!m_Valid)
-            return {};
+    ret.match = match;
+    return ret;
+}
 
-        std::string match;
+std::optional<MatchInfo> Matcher::matchGroups(const std::string &text) const
+{
+    if (!m_Valid)
+        return {};
 
-        Engine::Pattern &patterns = m_Syntax->getPattern();
-        unsigned int start = 0;
+    MatchInfo ret;
 
-        std::string ctext = std::string(text);
-        unsigned int subs = 0;
-        Engine::Pos i = 0;
-        for (; i < patterns.size(); i++)
+    Engine::Pattern &patterns = m_Syntax->getPattern();
+    unsigned int start = 0;
+
+    std::string ctext = std::string(text);
+    unsigned int subs = 0;
+    Engine::Pos i = 0;
+    for (; i < patterns.size(); i++)
+    {
+        auto &pattern = patterns[i];
+        logger.debug("\nMatching: {} => ", pattern->toPrettyString());
+
+        auto [matched, current] = pattern->match(ctext, start, patterns.size() > 1);
+        if (matched)
         {
-            auto& pattern = patterns[i];
-            PRINT(std::cout << "\n   Matching: " << pattern->toPrettyString() << " => ";)
-
-            auto [matched, current] = pattern->match(ctext, start);
-            if (matched)
+            std::string matchedText = ctext.substr(start, current - start);
+            logger.debug("Matcher: '{}' ", matchedText);
+            if (matchedText.empty())
             {
-                std::string matchedText = ctext.substr(start, current - start);
-                PRINT(std::cout << "Matched: '" << matchedText << "' ";)
-                match += matchedText;
+                continue;
+            }
+
+            if (pattern->shouldIgnore())
+            {
+                // ret.groups[0].push_back(matchedText);
+            }
+            else if (pattern->shouldCapture())
+            {
+                ret.groups.push_back(MatchInfo(start, matchedText));
+                ret.match += matchedText;
             }
             else
             {
-                PRINT(std::cout << "Not matched" << std::endl;)
-                if (ctext.size() == 1) {
-                    break;
-                }
-                ctext = ctext.substr(1);
-                subs++;
-                i--;
+                ret.match += matchedText;
             }
-            start = current;
+            ret.fullmatch += matchedText;
         }
-
-        if (i < patterns.size()) {
-            return {};
+        else
+        {
+            logger.debug("Not matched");
+            // PRINT(std::cout << "Not matched" << std::endl;)
+            if (ctext.size() == 1)
+            {
+                break;
+            }
+            ctext = ctext.substr(1);
+            subs++;
+            i--;
         }
-        // m_MaxMatch = start;
-        return MatchInfo{subs, match};
+        start = current;
     }
 
-
-    std::optional<std::list<std::string>> Matcher::findAll(const std::string &text) {
-        auto info = findAllInfo(text);
-
-        if (info.has_value()) {
-            std::list<std::string> matches;
-            for (const auto& v : info.value()) {
-                matches.push_back(v.match);
-            }
-            return matches;
-        }
-
+    if (i < patterns.size())
+    {
         return {};
     }
+    // m_MaxMatch = start;
+    if (ret.fullmatch.size() != text.size())
+        return std::nullopt;
 
-    std::optional<std::list<MatchInfo>> Matcher::findAllInfo(const std::string &text) {
-        if (!m_Valid)
-            return {};
+    ret.start = subs;
+    return ret;
+}
 
-        lastMaxLength = 0;
+std::optional<MatchInfo> Matcher::matchGroupsInfo(const std::string &text) const
+{
+    if (!m_Valid)
+        return {};
 
-        std::list<MatchInfo> matches;
-        auto ctext = std::string(text);
+    MatchInfo ret;
+    // int group = 0;
 
-        unsigned int acc = 0;
-        while (true) {
-            auto match = findInfo(ctext);
-            if (match.has_value()) {
-                auto value = match.value();
-                if (lastMaxLength < value.match.size()) {
-                    lastMaxLength = value.match.size();
-                }
-                acc += value.start;
-                value.start = acc;
-                matches.push_back(value);
-                acc += value.match.size();
+    Engine::Pattern &patterns = m_Syntax->getPattern();
+    unsigned int start = 0;
+    auto current = start;
+    std::vector<std::vector<MatchInfo>> groups;
 
-                ctext = text.substr(acc);
-                if (ctext.empty()) {
-                    break;
-                }
+    std::string ctext = std::string(text);
+    unsigned int subs = 0;
+    Engine::Pos i = 0;
+    for (; i < patterns.size(); i++)
+    {
+        auto &pattern = patterns[i];
+        logger.debug("Matching: {} => ", pattern->toPrettyString());
+
+        auto match = pattern->match_info(ctext, start, patterns.size() > 1);
+        bool matched = match.has_value();
+
+        if (matched)
+        {
+            current = match->start;
+            std::string matchedText = match->match;
+            logger.debug("Matched: '{}' ", matchedText);
+
+            // if (!match->groups.empty()) {
+            //     groups.push_back(match->groups);
+            //     for (auto& group : match->groups) {
+            //         std::cout << group.match << std::endl;
+            //     }
+            // }
+
+            if (matchedText.empty())
+            {
+                continue;
             }
-            else {
+
+            if (pattern->shouldIgnore())
+            {
+                // ret.groups[0].push_back(matchedText);
+            }
+            if (!match->groups.empty())
+            {
+                ret.groups.push_back(match.value());
+                ret.match += match->match;
+            }
+            // else if (pattern->shouldCapture()) {
+            //     ret.groups.push_back(MatchInfo(start, matchedText));
+            //     ret.match += matchedText;
+            // }
+            else
+            {
+                ret.match += matchedText;
+            }
+            ret.fullmatch += matchedText;
+        }
+        else
+        {
+            logger.debug("Not matched");
+            // PRINT(std::cout << "Not matched" << std::endl;)
+            if (ctext.size() == 1)
+            {
+                break;
+            }
+            ctext = ctext.substr(1);
+            subs++;
+            i--;
+        }
+        start = current;
+    }
+
+    if (i < patterns.size())
+    {
+        return {};
+    }
+    // m_MaxMatch = start;
+    if (ret.match.size() != text.size())
+        return std::nullopt;
+
+    ret.start = subs;
+    return ret;
+}
+
+std::optional<std::string> Matcher::find(const std::string &text) const
+{
+    if (auto info = findInfo(text); info.has_value())
+    {
+        return info.value().match;
+    }
+
+    return {};
+}
+
+std::optional<MatchInfo> Matcher::findInfo(const std::string &text) const
+{
+    if (!m_Valid)
+        return {};
+
+    std::string match;
+
+    Engine::Pattern &patterns = m_Syntax->getPattern();
+    unsigned int start = 0;
+
+    std::string ctext = std::string(text);
+    unsigned int subs = 0;
+    Engine::Pos i = 0;
+    for (; i < patterns.size(); i++)
+    {
+        auto &pattern = patterns[i];
+        PRINT(std::cout << "\n   Matching: " << pattern->toPrettyString() << " => ";)
+
+        auto [matched, current] = pattern->match(ctext, start);
+        if (matched)
+        {
+            std::string matchedText = ctext.substr(start, current - start);
+            PRINT(std::cout << "Matched: '" << matchedText << "' ";)
+            match += matchedText;
+        }
+        else
+        {
+            PRINT(std::cout << "Not matched" << std::endl;)
+            if (ctext.size() == 1)
+            {
+                break;
+            }
+            ctext = ctext.substr(1);
+            subs++;
+            i--;
+        }
+        start = current;
+    }
+
+    if (i < patterns.size())
+    {
+        return {};
+    }
+    // m_MaxMatch = start;
+    return MatchInfo{subs, match};
+}
+
+std::optional<std::list<std::string>> Matcher::findAll(const std::string &text)
+{
+    auto info = findAllInfo(text);
+
+    if (info.has_value())
+    {
+        std::list<std::string> matches;
+        for (const auto &v : info.value())
+        {
+            matches.push_back(v.match);
+        }
+        return matches;
+    }
+
+    return {};
+}
+
+std::optional<std::list<MatchInfo>> Matcher::findAllInfo(const std::string &text)
+{
+    if (!m_Valid)
+        return {};
+
+    lastMaxLength = 0;
+
+    std::list<MatchInfo> matches;
+    auto ctext = std::string(text);
+
+    unsigned int acc = 0;
+    while (true)
+    {
+        auto match = findInfo(ctext);
+        if (match.has_value())
+        {
+            auto value = match.value();
+            if (lastMaxLength < value.match.size())
+            {
+                lastMaxLength = value.match.size();
+            }
+            acc += value.start;
+            value.start = acc;
+            matches.push_back(value);
+            acc += value.match.size();
+
+            ctext = text.substr(acc);
+            if (ctext.empty())
+            {
                 break;
             }
         }
-
-        if (!matches.empty()) {
-            return matches;
-        }
-
-        return {};
-    }
-
-    void Matcher::printTokens() const
-    {
-        m_Tokenizer->print_tokens();
-    }
-
-    void Matcher::printAst() const
-    {
-        if (m_Valid)
-            m_Syntax->printAst();
-    }
-
-    void Matcher::prettyPrint() const
-    {
-        if (m_Valid)
+        else
         {
-            for (auto &p : m_Syntax->getPattern())
-            {
-                std::cout << p->toPrettyString();
-            }
-            std::cout << std::endl;
+            break;
         }
     }
-};
+
+    if (!matches.empty())
+    {
+        return matches;
+    }
+
+    return {};
+}
+
+void Matcher::printTokens() const { m_Tokenizer->print_tokens(); }
+
+void Matcher::printAst() const
+{
+    if (m_Valid)
+        m_Syntax->printAst();
+}
+
+void Matcher::prettyPrint() const
+{
+    if (m_Valid)
+    {
+        for (auto &p : m_Syntax->getPattern())
+        {
+            std::cout << p->toPrettyString();
+        }
+        std::cout << std::endl;
+    }
+}
+}; // namespace Utils::Regex
