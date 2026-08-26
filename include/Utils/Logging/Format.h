@@ -27,7 +27,7 @@ struct  Formatter
 
     void init(); // defined in src/Logging/Format.cpp to keep Regex out of this header
 
-    static void appendFlag(std::string& out, char flag, const Record& rec, const Time& t)
+    static void appendFlag(std::string& out, char flag, const Record& rec, const Time::Clock& t)
     {
         auto put = [&out](auto&& value, std::string_view spec = "{}")
         { std::vformat_to(std::back_inserter(out), spec, std::make_format_args(value)); };
@@ -67,7 +67,7 @@ public:
 
     [[nodiscard]] std::string render(const Record& rec) const
     {
-        Time t;
+        const Time::Clock t;
         std::string out;
         out.reserve(m_pattern.size() + 64);
 

@@ -10,17 +10,20 @@
 
 #include "Utils/Text/Stream.h"
 
-namespace Utils
+namespace Utils::Time
 {
 
-struct Time
+// A wall-clock snapshot, taken on construction. Lives inside namespace Utils::Time
+// (rather than as Utils::Time) so it cannot collide with the namespace itself,
+// which Timer.h and TimeContext.h also open.
+struct Clock
 {
     uint8_t hours;
     uint8_t minutes;
     uint8_t seconds;
     uint16_t milliseconds = 0U;
 
-    Time() { updateNow(); }
+    Clock() { updateNow(); }
 
     void updateNow()
     {
@@ -47,4 +50,4 @@ struct Time
     }
 };
 
-} // namespace Utils
+} // namespace Utils::Time
