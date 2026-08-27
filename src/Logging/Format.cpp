@@ -16,7 +16,7 @@ void Formatter::init()
     // spelled out rather than \T because \T only covers letters, and the table in
     // Format.h has %@ %# %$ and friends too.
     static const Utils::Regex::Matcher flagRegex(
-        R"('%'{'-'?\d+}?{(\c|\C|'@'|'#'|'!'|'^'|'$'|'%')})");
+        R"('%'{'-'?\d+}?{'.'\d+}?{(\c|\C|'@'|'#'|'!'|'^'|'$'|'%')})");
 
     auto matches = flagRegex.findAllGroupsInfo(m_pattern);
     if (!matches)
@@ -33,20 +33,31 @@ void Formatter::init()
         m_format += m_literals.back();
         m_format += "{}";
 
-        // The flag character is always the last group; a width, when the pattern has one,
-        // is the group before it.
+        // The flag character is always the last group. Whatever comes before it is a width
+        // spec, told apart by its text rather than its index: an optional group that did
+        // not participate leaves no entry at all, so "%.8l" and "%8l" both arrive as one.
         Flag flag{};
         flag.op = match.groups.back().match.front();
 
-        if (match.groups.size() > 1)
+        for (std::size_t i = 0; i + 1 < match.groups.size(); i++)
         {
-            const std::string &width = match.groups.front().match; // "3" or "-3"
-            flag.lalign = width.front() != '-';
+            const std::string &spec = match.groups[i].match; // "3", "-3" or ".8"
 
-            for (char c : width)
+            uint16_t value = 0;
+            for (char c : spec)
             {
                 if (c >= '0' && c <= '9')
-                    flag.padding = static_cast<uint16_t>(flag.padding * 10 + (c - '0'));
+                    value = static_cast<uint16_t>(value * 10 + (c - '0'));
+            }
+
+            if (spec.front() == '.')
+            {
+                flag.maxWidth = value;
+            }
+            else
+            {
+                flag.padding = value;
+                flag.lalign = spec.front() != '-';
             }
         }
 

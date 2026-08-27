@@ -23,7 +23,8 @@ struct  Formatter
     struct Flag
     {
         char op;
-        uint16_t padding = 0;
+        uint16_t padding = 0;   // "%8l": minimum width, the field is padded out to it
+        uint16_t maxWidth = 0;  // "%.8l": maximum width, the tail is cut past it (0 = no cap)
         bool lalign = false;
     };
     std::string m_pattern;                    // owns the text the views below point int
@@ -51,6 +52,28 @@ struct  Formatter
         }
 
         return width;
+    }
+
+    // Byte index just past the `columns`-th visible character. Escapes cost no columns and
+    // are never cut in half, or the terminal would be handed half a control sequence.
+    static std::size_t byteOffsetOfColumn(std::string_view text, std::size_t columns)
+    {
+        std::size_t seen = 0;
+        for (std::size_t i = 0; i < text.size(); ++i)
+        {
+            if (text[i] == '\x1b')
+            {
+                while (i < text.size() && text[i] != 'm')
+                    ++i;
+                continue;
+            }
+
+            if (seen == columns)
+                return i;
+            ++seen;
+        }
+
+        return text.size();
     }
 
     static void appendFlag(std::string& out, char flag, const Record& rec, const Time::Clock& t)
@@ -102,28 +125,37 @@ public:
             out += m_literals[i]; // text before this flag
 
             const Flag& flag = m_flags[i];
-            if (flag.padding == 0)
-            {
-                appendFlag(out, flag.op, rec, t);
+            const std::size_t start = out.size();
+            appendFlag(out, flag.op, rec, t);
+
+            if (flag.padding == 0 && flag.maxWidth == 0)
                 continue;
+
+            // The field is written; adjust it in place. Too long and too short are
+            // exclusive, so cut first and only then consider padding.
+            std::size_t shown = visibleWidth(std::string_view(out).substr(start));
+
+            if (flag.maxWidth != 0 && shown > flag.maxWidth)
+            {
+                const std::string_view field = std::string_view(out).substr(start);
+                const std::size_t cut = start + byteOffsetOfColumn(field, flag.maxWidth);
+                const bool colored = field.substr(0, cut - start).find('\x1b') != std::string_view::npos;
+
+                out.resize(cut);
+                if (colored)
+                    out += "\x1b[0m"; // the cut may have taken the color's own reset with it
+
+                shown = flag.maxWidth;
             }
 
-            // A width was given ("%-3S"), so render the flag on its own and pad it.
-            std::string piece;
-            appendFlag(piece, flag.op, rec, t);
+            if (shown >= flag.padding)
+                continue;
 
-            const std::size_t shown = visibleWidth(piece);
-            const std::size_t fill = shown < flag.padding ? flag.padding - shown : 0;
+            const std::size_t fill = flag.padding - shown;
             if (flag.lalign)
-            {
-                out += piece;
                 out.append(fill, ' ');
-            }
             else
-            {
-                out.append(fill, ' ');
-                out += piece;
-            }
+                out.insert(start, fill, ' ');
         }
         out += m_literals.back();                       // trailing text
         return out;
@@ -163,5 +195,15 @@ public:
 │ %^ %$       │ start / end of the colored range                │
 ├─────────────┼─────────────────────────────────────────────────┤
 │ %%          │ a literal %
+
+ A flag may carry a width: %[min][.max]flag
+
+ │ %8n     │ pad out to 8 columns
+ │ %-8n    │ pad the other way
+ │ %.8n    │ cut past 8 columns, keeping the start
+ │ %8.8n   │ both, so the field is always exactly 8 columns wide
+
+ Widths count what the terminal shows, so the ANSI escapes in %l, %n and %@ neither
+ pad nor get cut in half.
  */
 } // namespace Utils::Logging
