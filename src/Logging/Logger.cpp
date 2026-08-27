@@ -10,7 +10,7 @@ namespace Utils
 {
 uint32_t Logger::s_scopeSize = 0;
 Logger::Level Logger::s_level = Level::ERROR;
-Logging::Formatter Logger::s_formatter{"%H:%M:%S [%l] [%@] [%n] %v"};
+Logging::Formatter Logger::s_formatter{"%H:%M:%S %7l [%@] [%n] %v"};
 
 Logger::Logger(std::string scope) : m_scope(std::move(scope))
 {

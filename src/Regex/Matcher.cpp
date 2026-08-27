@@ -7,9 +7,34 @@ using namespace Utils::Regex::Engine;
 
 namespace Utils::Regex
 {
-Matcher::Matcher(const std::string &pattern) : m_Pattern(pattern), logger("matcher")
+namespace
 {
-    logger.setLoggerLevel(Logger::DEBUGGING);
+// AstNodeOps::match_info() hands MatchInfo::start back as the cursor *after* the match,
+// which is what the matching loops need but not what a caller wants to read. Rewrite the
+// whole tree into real (start, len) spans and shift it into the original text's coordinates.
+void normalizeSpans(MatchInfo &info, unsigned int offset)
+{
+    info.len = static_cast<unsigned int>(info.match.size());
+    info.start = offset + (info.start >= info.len ? info.start - info.len : 0);
+    for (auto &group : info.groups)
+    {
+        normalizeSpans(group, offset);
+    }
+}
+
+// Move an already normalized tree by `offset` characters.
+void shiftSpans(MatchInfo &info, unsigned int offset)
+{
+    info.start += offset;
+    for (auto &group : info.groups)
+    {
+        shiftSpans(group, offset);
+    }
+}
+} // namespace
+
+Matcher::Matcher(const std::string &pattern) : m_Pattern(pattern)
+{
     m_Tokenizer = std::make_unique<Engine::Tokenizer>(pattern);
     m_Tokenizer->tokenize();
 
@@ -25,13 +50,13 @@ Matcher::Matcher(const std::string &pattern) : m_Pattern(pattern), logger("match
 Matcher::Matcher(const Matcher &other)
     : m_Pattern(other.m_Pattern), m_Valid(other.m_Valid),
       m_Tokenizer(std::make_unique<Engine::Tokenizer>(*other.m_Tokenizer)),
-      m_Syntax(std::make_unique<Engine::Syntax>(*other.m_Syntax)), logger("matcher")
+      m_Syntax(std::make_unique<Engine::Syntax>(*other.m_Syntax))
 {
 }
 
 Matcher::Matcher(Matcher &&other) noexcept
     : m_Pattern(std::move(other.m_Pattern)), m_Tokenizer(std::move(other.m_Tokenizer)),
-      m_Syntax(std::move(other.m_Syntax)), m_Valid(other.m_Valid), logger("matcher")
+      m_Syntax(std::move(other.m_Syntax)), m_Valid(other.m_Valid)
 {
 }
 
@@ -151,13 +176,13 @@ std::optional<MatchInfo> Matcher::matchGroups(const std::string &text) const
     for (; i < patterns.size(); i++)
     {
         auto &pattern = patterns[i];
-        logger.debug("\nMatching: {} => ", pattern->toPrettyString());
+        PRINT(std::cout << "\n   Matching: " << pattern->toPrettyString() << " => ";)
 
         auto [matched, current] = pattern->match(ctext, start, patterns.size() > 1);
         if (matched)
         {
             std::string matchedText = ctext.substr(start, current - start);
-            logger.debug("Matcher: '{}' ", matchedText);
+            PRINT(std::cout << "Matched: '" << matchedText << "' ";)
             if (matchedText.empty())
             {
                 continue;
@@ -180,8 +205,7 @@ std::optional<MatchInfo> Matcher::matchGroups(const std::string &text) const
         }
         else
         {
-            logger.debug("Not matched");
-            // PRINT(std::cout << "Not matched" << std::endl;)
+            PRINT(std::cout << "Not matched" << std::endl;)
             if (ctext.size() == 1)
             {
                 break;
@@ -224,7 +248,7 @@ std::optional<MatchInfo> Matcher::matchGroupsInfo(const std::string &text) const
     for (; i < patterns.size(); i++)
     {
         auto &pattern = patterns[i];
-        logger.debug("Matching: {} => ", pattern->toPrettyString());
+        PRINT(std::cout << "\n   Matching: " << pattern->toPrettyString() << " => ";)
 
         auto match = pattern->match_info(ctext, start, patterns.size() > 1);
         bool matched = match.has_value();
@@ -233,7 +257,7 @@ std::optional<MatchInfo> Matcher::matchGroupsInfo(const std::string &text) const
         {
             current = match->start;
             std::string matchedText = match->match;
-            logger.debug("Matched: '{}' ", matchedText);
+            PRINT(std::cout << "Matched: '" << matchedText << "' ";)
 
             // if (!match->groups.empty()) {
             //     groups.push_back(match->groups);
@@ -247,29 +271,18 @@ std::optional<MatchInfo> Matcher::matchGroupsInfo(const std::string &text) const
                 continue;
             }
 
-            if (pattern->shouldIgnore())
+            if (!pattern->shouldIgnore())
             {
-                // ret.groups[0].push_back(matchedText);
-            }
-            if (!match->groups.empty())
-            {
-                ret.groups.push_back(match.value());
-                ret.match += match->match;
-            }
-            // else if (pattern->shouldCapture()) {
-            //     ret.groups.push_back(MatchInfo(start, matchedText));
-            //     ret.match += matchedText;
-            // }
-            else
-            {
+                MatchInfo info = match.value();
+                normalizeSpans(info, subs);
+                Engine::AstNodeOps::collectGroups(ret, *pattern, info);
                 ret.match += matchedText;
             }
             ret.fullmatch += matchedText;
         }
         else
         {
-            logger.debug("Not matched");
-            // PRINT(std::cout << "Not matched" << std::endl;)
+            PRINT(std::cout << "Not matched" << std::endl;)
             if (ctext.size() == 1)
             {
                 break;
@@ -290,7 +303,85 @@ std::optional<MatchInfo> Matcher::matchGroupsInfo(const std::string &text) const
         return std::nullopt;
 
     ret.start = subs;
+    ret.len = static_cast<unsigned int>(ret.match.size());
     return ret;
+}
+
+std::optional<MatchInfo> Matcher::findGroupsInfo(const std::string &text) const
+{
+    if (!m_Valid)
+        return {};
+
+    Engine::Pattern &patterns = m_Syntax->getPattern();
+
+    // Try to anchor the whole pattern at every position, first match wins.
+    for (unsigned int offset = 0; offset < text.size(); offset++)
+    {
+        const std::string ctext = text.substr(offset);
+        MatchInfo ret;
+        unsigned int start = 0;
+        bool matchedAll = true;
+
+        for (auto &pattern : patterns)
+        {
+            PRINT(std::cout << "\n   Matching: " << pattern->toPrettyString() << " => ";)
+
+            auto match = pattern->match_info(ctext, start, patterns.size() > 1);
+            if (!match.has_value())
+            {
+                PRINT(std::cout << "Not matched" << std::endl;)
+                matchedAll = false;
+                break;
+            }
+
+            PRINT(std::cout << "Matched: '" << match->match << "' ";)
+
+            if (!match->match.empty() && !pattern->shouldIgnore())
+            {
+                MatchInfo info = match.value();
+                normalizeSpans(info, offset);
+                Engine::AstNodeOps::collectGroups(ret, *pattern, info);
+                ret.match += match->match;
+            }
+            start = match->start;
+        }
+
+        if (!matchedAll || ret.match.empty())
+            continue;
+
+        ret.start = offset;
+        ret.len = start;                        // characters consumed, ignored parts included
+        ret.fullmatch = ctext.substr(0, start); // ...and their text
+        return ret;
+    }
+
+    return {};
+}
+
+std::optional<std::list<MatchInfo>> Matcher::findAllGroupsInfo(const std::string &text) const
+{
+    if (!m_Valid)
+        return {};
+
+    std::list<MatchInfo> matches;
+
+    unsigned int acc = 0;
+    while (acc < text.size())
+    {
+        auto match = findGroupsInfo(text.substr(acc));
+        if (!match.has_value())
+            break;
+
+        shiftSpans(match.value(), acc);
+        // A zero-width match would spin here forever, so always step at least one char.
+        acc = match->start + std::max(1u, match->len);
+        matches.push_back(match.value());
+    }
+
+    if (matches.empty())
+        return {};
+
+    return matches;
 }
 
 std::optional<std::string> Matcher::find(const std::string &text) const

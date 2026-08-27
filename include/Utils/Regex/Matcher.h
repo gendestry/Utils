@@ -4,7 +4,6 @@
 #include <memory>
 #include "Utils/Regex/Engine/Tokenizer.h"
 #include "Utils/Regex/Engine/Syntax.h"
-#include "Utils/Logging/Logger.h"
 #include "Engine/AST/AST.h"
 #include <optional>
 
@@ -17,9 +16,11 @@
 
 namespace Utils::Regex
 {
+    // Deliberately does not use Utils::Logger: Logger owns a Formatter, and a Formatter
+    // that parses its pattern with a Matcher would re-enter itself mid-construction.
+    // Tracing here goes through PRINT so the engine stays free of that cycle.
     class Matcher
     {
-        Logger logger;
         bool m_Valid = true;
         std::string m_Pattern;
         std::unique_ptr<Engine::Tokenizer> m_Tokenizer;
@@ -68,6 +69,11 @@ namespace Utils::Regex
 
         [[nodiscard]] std::optional<std::string> find(const std::string &text) const;
         [[nodiscard]] std::optional<Engine::MatchInfo> findInfo(const std::string &text) const;
+
+        // Like findInfo, but the returned MatchInfo also carries the {..} captures of that
+        // one match. Positions are absolute in `text`.
+        [[nodiscard]] std::optional<Engine::MatchInfo> findGroupsInfo(const std::string &text) const;
+        [[nodiscard]] std::optional<std::list<Engine::MatchInfo>> findAllGroupsInfo(const std::string &text) const;
 
         [[nodiscard]] std::optional<std::list<std::string>> findAll(const std::string &text);
         [[nodiscard]] std::optional<std::list<Engine::MatchInfo>> findAllInfo(const std::string &text);

@@ -20,12 +20,38 @@ struct Record
 
 struct  Formatter
 {
+    struct Flag
+    {
+        char op;
+        uint16_t padding = 0;
+        bool lalign = false;
+    };
     std::string m_pattern;                    // owns the text the views below point int
     std::string m_format;                    // owns the text the views below point int
-    std::vector<std::string> m_flags;                      // flag letters, in order of appearance
+    std::vector<Flag> m_flags;                      // flags, in order of appearance
     std::vector<std::string> m_literals;                   // text between the flags (m_flags.size() + 1 entries)
 
     void init(); // defined in src/Logging/Format.cpp to keep Regex out of this header
+
+    // Padding has to count columns, not bytes: the level, scope and location arrive
+    // already wrapped in ANSI escapes, which are invisible but far from free in size().
+    static std::size_t visibleWidth(std::string_view text)
+    {
+        std::size_t width = 0;
+        for (std::size_t i = 0; i < text.size(); ++i)
+        {
+            if (text[i] != '\x1b')
+            {
+                ++width;
+                continue;
+            }
+
+            while (i < text.size() && text[i] != 'm') // skip the escape sequence
+                ++i;
+        }
+
+        return width;
+    }
 
     static void appendFlag(std::string& out, char flag, const Record& rec, const Time::Clock& t)
     {
@@ -73,8 +99,31 @@ public:
 
         for (std::size_t i = 0; i < m_flags.size(); ++i)
         {
-            out += m_literals[i];                       // text before this flag
-            appendFlag(out, m_flags[i][1], rec, t);     // m_flags[i] is "%H", so [1] is the letter
+            out += m_literals[i]; // text before this flag
+
+            const Flag& flag = m_flags[i];
+            if (flag.padding == 0)
+            {
+                appendFlag(out, flag.op, rec, t);
+                continue;
+            }
+
+            // A width was given ("%-3S"), so render the flag on its own and pad it.
+            std::string piece;
+            appendFlag(piece, flag.op, rec, t);
+
+            const std::size_t shown = visibleWidth(piece);
+            const std::size_t fill = shown < flag.padding ? flag.padding - shown : 0;
+            if (flag.lalign)
+            {
+                out += piece;
+                out.append(fill, ' ');
+            }
+            else
+            {
+                out.append(fill, ' ');
+                out += piece;
+            }
         }
         out += m_literals.back();                       // trailing text
         return out;

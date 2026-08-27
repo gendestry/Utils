@@ -40,9 +40,14 @@ MatchInfo AstNodeParen::_match_info(std::string text, unsigned int st, bool igno
     MatchInfo matchInfo;
     matchInfo.start = st;
 
-    unsigned int start = st;
     for (auto &subPattern : m_Ops)
     {
+        // Each alternative starts over: a half-matched one must not leave its text or
+        // its captures behind for the next.
+        matchInfo = MatchInfo{};
+        matchInfo.start = st;
+        unsigned int start = st;
+
         bool allMatched = true;
         for (unsigned int i = 0; i < subPattern.size(); i++)
         {
@@ -64,6 +69,7 @@ MatchInfo AstNodeParen::_match_info(std::string text, unsigned int st, bool igno
             start = minfo->start;
             matchInfo.start = start;
             matchInfo.match += minfo->match;
+            collectGroups(matchInfo, *op, minfo.value());
         }
 
         if (allMatched)

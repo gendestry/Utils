@@ -25,7 +25,7 @@ unsigned int AstNodeCapture::_match(std::string text, unsigned int st, bool igno
             allMatched = false;
             break;
         }
-        start = start;
+        start = current;
     }
 
     if (allMatched)
@@ -124,12 +124,13 @@ MatchInfo AstNodeCapture::_match_info(std::string text, unsigned int st, bool ig
         start = minfo->start;
         matchInfo.start = start;
         matchInfo.match += minfo->match;
-        // matchInfo.groups.push_back(minfo.value());
+        collectGroups(matchInfo, *op, minfo.value());
     }
 
     if (!allMatched) {
         matchInfo.match = "";
         matchInfo.start = st;
+        matchInfo.groups.clear();
     }
 
     return matchInfo;

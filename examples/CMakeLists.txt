@@ -10,3 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/lulcek/main.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE utils)
+
+add_executable(regex_groups ${CMAKE_CURRENT_SOURCE_DIR}/regex_groups/main.cpp)
+
+target_link_libraries(regex_groups PRIVATE utils)

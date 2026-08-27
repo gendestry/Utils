@@ -18,8 +18,8 @@ namespace Utils::Regex::Engine
     };
 
     struct MatchInfo {
-        unsigned int start;
-        unsigned int len;
+        unsigned int start = 0;
+        unsigned int len = 0;
         std::string match;
         std::string fullmatch;
 
@@ -33,16 +33,16 @@ namespace Utils::Regex::Engine
 
         unsigned int end() const
         {
-            return start + len-1;
+            return len == 0 ? start : start + len - 1;
         }
-        std::string toString() {
+        std::string toString() const {
             Utils::Text::Stream s;
             // s << match << "\n[";
             s << "[" << match;
             if (!groups.empty())
             {
                 s << " ";
-                for(auto group : groups) {
+                for(const auto& group : groups) {
                     s << group.toString() << "";
                 }
             }
@@ -112,6 +112,21 @@ namespace Utils::Regex::Engine
 
         bool shouldDefault() const {
             return m_whatDo == DEFAULT;
+        }
+
+        // The one rule for building the capture tree: a {..} child becomes a nested
+        // capture, and any other node (paren, enclosure) hands its own captures straight
+        // up. That way only {..} ever appears in MatchInfo::groups, one entry per {..}
+        // the pattern actually went through, in source order.
+        static void collectGroups(MatchInfo &into, const AstNodeOps &child, const MatchInfo &info)
+        {
+            if (child.shouldIgnore())
+                return;
+
+            if (child.shouldCapture())
+                into.groups.push_back(info);
+            else
+                into.groups.insert(into.groups.end(), info.groups.begin(), info.groups.end());
         }
 
         virtual std::string toString() = 0;

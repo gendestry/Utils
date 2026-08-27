@@ -101,6 +101,7 @@ std::optional<MatchInfo> AstNodeOps::match_info(std::string text, unsigned int s
             tm = _match_info(text, s, ignoreAllMathced);
             m = tm.start;
             mi.match += tm.match;
+            mi.groups.insert(mi.groups.end(), tm.groups.begin(), tm.groups.end());
 
             while (m != s)
             {
@@ -108,6 +109,7 @@ std::optional<MatchInfo> AstNodeOps::match_info(std::string text, unsigned int s
                 tm = _match_info(text, s, ignoreAllMathced);
                 m = tm.start;
                 mi.match += tm.match;
+                mi.groups.insert(mi.groups.end(), tm.groups.begin(), tm.groups.end());
             }
 
             mi.start = m;
@@ -122,6 +124,7 @@ std::optional<MatchInfo> AstNodeOps::match_info(std::string text, unsigned int s
             tm = _match_info(text, s, ignoreAllMathced);
             m = tm.start;
             mi.match += tm.match;
+            mi.groups.insert(mi.groups.end(), tm.groups.begin(), tm.groups.end());
         }
 
         mi.start = m;
@@ -139,6 +142,7 @@ std::optional<MatchInfo> AstNodeOps::match_info(std::string text, unsigned int s
                 tm = _match_info(text, s, ignoreAllMathced);
                 m = tm.start;
                 mi.match += tm.match;
+                mi.groups.insert(mi.groups.end(), tm.groups.begin(), tm.groups.end());
             }
             else {
                 return {};
@@ -151,6 +155,7 @@ std::optional<MatchInfo> AstNodeOps::match_info(std::string text, unsigned int s
             tm = _match_info(text, s, ignoreAllMathced);
             m = tm.start;
             mi.match += tm.match;
+            mi.groups.insert(mi.groups.end(), tm.groups.begin(), tm.groups.end());
             i++;
         }
 

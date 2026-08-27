@@ -123,9 +123,7 @@ MatchInfo AstNodeEnclosure::_match_info(std::string text, unsigned int st, bool 
         matchInfo.start = start;
         matchInfo.match += minfo->match;
 
-        if (op->shouldCapture())
-        {matchInfo.groups.push_back(minfo.value());}
-
+        collectGroups(matchInfo, *op, minfo.value());
     }
 
     if (!allMatched) {
@@ -229,14 +227,9 @@ MatchInfo AstNodeEnclosure::_match_info(std::string text, unsigned int st, bool 
 //     return {};
 // }
 
-bool AstNodeEnclosure::shouldCapture() const {
-    for (auto &op : m_Ops) {
-        if (op->shouldCapture())
-            return true;
-    }
-
-    return false;
-}
+// An enclosure is only there to group and to carry an operator, so it is never a capture
+// itself: collectGroups() lifts whatever its children captured into the parent instead.
+bool AstNodeEnclosure::shouldCapture() const { return false; }
 
 
 std::string AstNodeEnclosure::toString()
