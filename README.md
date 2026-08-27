@@ -12,6 +12,7 @@ For now a function that returns a string of the file contents
 
 ## Logging
 Contains a simple scoped logger class, supports multiple log levels (DEBUG, INFO, ERROR)
+and a pattern-based output format, more in Logging/README.md
 
 ## Maths
 - linear interpolation

@@ -28,34 +28,43 @@ struct  Formatter
         bool lalign = false;
     };
     std::string m_pattern;                    // owns the text the views below point int
-    std::string m_format;                    // owns the text the views below point int
     std::vector<Flag> m_flags;                      // flags, in order of appearance
     std::vector<std::string> m_literals;                   // text between the flags (m_flags.size() + 1 entries)
 
     void init(); // defined in src/Logging/Format.cpp to keep Regex out of this header
 
+    // Leaves `i` on the last byte of the ANSI escape sequence that starts there, so the
+    // enclosing loop's ++i steps past it.
+    static void skipEscape(std::string_view text, std::size_t& i)
+    {
+        while (i < text.size() && text[i] != 'm')
+            ++i;
+    }
+
+    // True for every byte that begins a UTF-8 character. Continuation bytes (10xxxxxx)
+    // belong to the character before them and occupy no column of their own.
+    static bool isCharStart(char c) { return (static_cast<unsigned char>(c) & 0xC0) != 0x80; }
+
     // Padding has to count columns, not bytes: the level, scope and location arrive
-    // already wrapped in ANSI escapes, which are invisible but far from free in size().
+    // already wrapped in ANSI escapes, which are invisible but far from free in size(),
+    // and any non-ASCII text spends several bytes per character.
     static std::size_t visibleWidth(std::string_view text)
     {
         std::size_t width = 0;
         for (std::size_t i = 0; i < text.size(); ++i)
         {
-            if (text[i] != '\x1b')
-            {
+            if (text[i] == '\x1b')
+                skipEscape(text, i);
+            else if (isCharStart(text[i]))
                 ++width;
-                continue;
-            }
-
-            while (i < text.size() && text[i] != 'm') // skip the escape sequence
-                ++i;
         }
 
         return width;
     }
 
-    // Byte index just past the `columns`-th visible character. Escapes cost no columns and
-    // are never cut in half, or the terminal would be handed half a control sequence.
+    // Byte index just past the `columns`-th visible character. Neither an escape sequence
+    // nor a multi-byte character is ever cut in half, or the terminal would be handed a
+    // stray control code or invalid UTF-8.
     static std::size_t byteOffsetOfColumn(std::string_view text, std::size_t columns)
     {
         std::size_t seen = 0;
@@ -63,10 +72,12 @@ struct  Formatter
         {
             if (text[i] == '\x1b')
             {
-                while (i < text.size() && text[i] != 'm')
-                    ++i;
+                skipEscape(text, i);
                 continue;
             }
+
+            if (!isCharStart(text[i]))
+                continue;
 
             if (seen == columns)
                 return i;
@@ -114,52 +125,7 @@ public:
     }
 
 
-    [[nodiscard]] std::string render(const Record& rec) const
-    {
-        const Time::Clock t;
-        std::string out;
-        out.reserve(m_pattern.size() + 64);
-
-        for (std::size_t i = 0; i < m_flags.size(); ++i)
-        {
-            out += m_literals[i]; // text before this flag
-
-            const Flag& flag = m_flags[i];
-            const std::size_t start = out.size();
-            appendFlag(out, flag.op, rec, t);
-
-            if (flag.padding == 0 && flag.maxWidth == 0)
-                continue;
-
-            // The field is written; adjust it in place. Too long and too short are
-            // exclusive, so cut first and only then consider padding.
-            std::size_t shown = visibleWidth(std::string_view(out).substr(start));
-
-            if (flag.maxWidth != 0 && shown > flag.maxWidth)
-            {
-                const std::string_view field = std::string_view(out).substr(start);
-                const std::size_t cut = start + byteOffsetOfColumn(field, flag.maxWidth);
-                const bool colored = field.substr(0, cut - start).find('\x1b') != std::string_view::npos;
-
-                out.resize(cut);
-                if (colored)
-                    out += "\x1b[0m"; // the cut may have taken the color's own reset with it
-
-                shown = flag.maxWidth;
-            }
-
-            if (shown >= flag.padding)
-                continue;
-
-            const std::size_t fill = flag.padding - shown;
-            if (flag.lalign)
-                out.append(fill, ' ');
-            else
-                out.insert(start, fill, ' ');
-        }
-        out += m_literals.back();                       // trailing text
-        return out;
-    }
+    [[nodiscard]] std::string render(const Record& rec) const;
 };
 
 /*

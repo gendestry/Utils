@@ -18,9 +18,9 @@ namespace Utils::Time
 // which Timer.h and TimeContext.h also open.
 struct Clock
 {
-    uint8_t hours;
-    uint8_t minutes;
-    uint8_t seconds;
+    uint8_t hours = 0U;
+    uint8_t minutes = 0U;
+    uint8_t seconds = 0U;
     uint16_t milliseconds = 0U;
 
     Clock() { updateNow(); }
@@ -29,10 +29,20 @@ struct Clock
     {
         const auto tp = std::chrono::system_clock::now();
         const std::time_t t = std::chrono::system_clock::to_time_t(tp);
-        const std::tm *now = std::localtime(&t);
-        hours = now->tm_hour;
-        minutes = now->tm_min;
-        seconds = now->tm_sec;
+
+        // std::localtime() returns a pointer into one shared static tm, so two threads
+        // taking a snapshot at once read each other's fields half-written. The _r/_s
+        // variants fill a tm we own instead.
+        std::tm now{};
+#ifdef _WIN32
+        localtime_s(&now, &t);
+#else
+        localtime_r(&t, &now);
+#endif
+
+        hours = now.tm_hour;
+        minutes = now.tm_min;
+        seconds = now.tm_sec;
 
         const auto sinceEpoch = tp.time_since_epoch();
         milliseconds = static_cast<uint16_t>(

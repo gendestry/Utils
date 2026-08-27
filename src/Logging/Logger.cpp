@@ -8,32 +8,50 @@
 
 namespace Utils
 {
-uint32_t Logger::s_scopeSize = 0;
-Logger::Level Logger::s_level = Level::ERROR;
-Logging::Formatter Logger::s_formatter{"%H:%M:%S %7l [%@] [%n] %v"};
+std::atomic<uint32_t> Logger::s_scopeSize = 0;
+std::atomic<Logger::Level> Logger::s_level = Level::ERROR;
+std::atomic<std::shared_ptr<const Logging::Formatter>> Logger::s_formatter{
+    std::make_shared<const Logging::Formatter>("%H:%M:%S %7l [%@] [%n] %v")
+};
+std::mutex Logger::s_writeMutex;
+
+// Widening a maximum is a read-modify-write, so plain assignment would let two threads
+// racing to grow it settle on the smaller of the two.
+static void growTo(std::atomic<uint32_t> &value, std::size_t candidate)
+{
+    uint32_t seen = value.load(std::memory_order_relaxed);
+    while (candidate > seen &&
+           !value.compare_exchange_weak(
+               seen, static_cast<uint32_t>(candidate), std::memory_order_relaxed
+           ))
+    {
+    }
+}
 
 Logger::Logger(std::string scope) : m_scope(std::move(scope))
 {
-    if (scope.size() > s_scopeSize)
-    {
-        s_scopeSize = scope.size();
-    }
+    growTo(s_scopeSize, m_scope.size());
 }
 
 Logger::Logger(Logger &other, std::string scope)
 {
     m_scope = other.m_scope + scope;
-    if (scope.size() > s_scopeSize)
-    {
-        s_scopeSize = scope.size();
-    }
+    growTo(s_scopeSize, m_scope.size());
 }
 
-void Logger::setFormat(const std::string &pattern) { s_formatter.setPattern(pattern); }
+// A new Formatter every time rather than setPattern() on the live one: readers hold the
+// old object by shared_ptr and finish rendering from it undisturbed.
+void Logger::setFormat(const std::string &pattern)
+{
+    s_formatter.store(std::make_shared<const Logging::Formatter>(pattern), std::memory_order_release);
+}
 
-void Logger::setLoggerFormat(const std::string &pattern) { m_formatter.emplace(pattern); }
+void Logger::setLoggerFormat(const std::string &pattern)
+{
+    m_formatter = std::make_shared<const Logging::Formatter>(pattern);
+}
 
-void Logger::setLevel(Level level) { s_level = level; }
+void Logger::setLevel(Level level) { s_level.store(level, std::memory_order_relaxed); }
 
 void Logger::setLoggerLevel(Level level) { m_level = level; }
 
@@ -41,11 +59,14 @@ void Logger::incPadOffset() { m_padOffset++; }
 
 void Logger::decPadOffset() { m_padOffset--; }
 
-void Logger::print(const std::string &text) const { std::print("{}{}", prependInfoStr(""), text); }
+void Logger::print(const std::string &text) const
+{
+    writeText(std::format("{}{}", prependInfoStr(""), text));
+}
 
 void Logger::println(const std::string &text) const
 {
-    std::println("{}{}", prependInfoStr(""), text);
+    writeLine(std::format("{}{}", prependInfoStr(""), text));
 }
 
 std::string Logger::paddingStr() const { return String::pad(m_padOffset, "  "); }
