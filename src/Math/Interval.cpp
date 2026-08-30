@@ -2,7 +2,6 @@
 
 namespace Utils::Maths
 {
-
 void Interval::fragment()
 {
     auto bit = m_bases.begin();
@@ -45,6 +44,154 @@ void Interval::cache()
         m_cache.insert(m_cache.end(), base.values().begin(), base.values().end());
 }
 
+void Interval::add(IntervalBase base)
+{
+    if (m_bases.empty())
+    {
+        m_bases.emplace_back(std::move(base));
+        cache();
+        return;
+    }
+
+    auto it = m_bases.begin();
+    while (it != m_bases.end() && *it < base)
+        ++it;
+
+    m_bases.insert(it, std::move(base));
+    fragment();
+};
+
+void Interval::remove(const IntervalBase &removal)
+{
+    auto it = m_bases.begin();
+
+    while (it != m_bases.end())
+    {
+        // Existing interval is completely before removal.
+        if (*it < removal)
+        {
+            ++it;
+            continue;
+        }
+
+        // Existing interval is completely after removal.
+        if (*it > removal)
+            break;
+
+        const auto from = it->getFrom();
+        const auto to = it->getTo();
+
+        // removal completely covers this interval.
+        if (removal.getFrom() <= from && removal.getTo() >= to)
+        {
+            it = m_bases.erase(it);
+            continue;
+        }
+
+        // Removal cuts off the left side.
+        if (removal.getFrom() <= from)
+        {
+            *it = IntervalBase(removal.getTo() + 1, to);
+            break;
+        }
+
+        // Removal cuts off the right side.
+        if (removal.getTo() >= to)
+        {
+            *it = IntervalBase(from, removal.getFrom() - 1);
+            ++it;
+            continue;
+        }
+
+        // Removal is completely inside the existing interval.
+        // Split:
+        //
+        // [from ........ to]
+        //       [removal]
+        //
+        // -> [from..removal.from-1]
+        //    [removal.to+1..to]
+        auto right = IntervalBase(removal.getTo() + 1, to);
+
+        *it = IntervalBase(from, removal.getFrom() - 1);
+
+        m_bases.insert(std::next(it), std::move(right));
+
+        break;
+    }
+
+    // cache(), not fragment(): removal only shrinks or splits bases, so it
+    // can never leave two of them touching. There is nothing to re-merge.
+    cache();
+}
+
+bool Interval::contains(uint64_t value) const
+{
+    for (const auto &it : m_bases)
+    {
+        if (it.contains(value))
+        {
+            return true;
+        }
+        // m_bases is sorted, so once a base starts past the value we are done.
+        if (it > value)
+        {
+            break;
+        }
+    }
+    return false;
+}
+
+Interval &Interval::operator+=(uint64_t value)
+{
+    add(value);
+    return *this;
+}
+
+Interval &Interval::operator-=(uint64_t value)
+{
+    remove(value);
+    return *this;
+}
+
+Interval &Interval::operator|=(const Interval &other)
+{
+    // Self-union is a no-op. Guarded up front because add() -> fragment()
+    // erases from m_bases, which would invalidate the loop's iterator into
+    // other.m_bases when the two are the same list.
+    if (this == &other)
+        return *this;
+
+    for (const auto &base : other.m_bases)
+        add(base);
+
+    return *this;
+}
+
+Interval &Interval::operator&=(const Interval &other)
+{
+    // operator& builds a fresh result before assigning, so self-intersection
+    // is safe without a guard.
+    *this = *this & other;
+    return *this;
+}
+
+Interval &Interval::operator-=(const Interval &other)
+{
+    // Removing a set from itself leaves nothing. Same aliasing hazard as |=:
+    // remove() erases from m_bases while we walk other.m_bases.
+    if (this == &other)
+    {
+        clear();
+        return *this;
+    }
+
+    for (const auto &base : other.m_bases)
+        remove(base);
+
+    return *this;
+}
+
 Interval operator|(const Interval &lhs, const Interval &rhs)
 {
     Interval result = lhs;
@@ -73,38 +220,12 @@ Interval operator&(const Interval &lhs, const Interval &rhs)
     return result;
 }
 
-// bool IntervalBase::contains(uint64_t value) const { return value >= start && value <= end; }
-
-// bool IntervalBase::overlaps(const IntervalBase &other) const
-// {
-//     return start <= other.end && other.start <= end;
-// }
-
-// // Also merge directly adjacent intervals:
-// // [0,10] + [11,20]
-// bool IntervalBase::touches(const IntervalBase &other) const
-// {
-//     return start <= other.end + 1 && other.start <= end + 1;
-// }
-
-// void IntervalBase::merge(const IntervalBase &other)
-// {
-//     start = std::min(start, other.start);
-//     end = std::max(end, other.end);
-//     fill();
-// }
-
-// bool IntervalBase::operator<(const IntervalBase &other) const { return end < other.start; }
-// bool IntervalBase::operator<(uint64_t value) const { return end < value; }
-
-// bool IntervalBase::operator>(const IntervalBase &other) const { return start > other.end; }
-// bool IntervalBase::operator>(uint64_t value) const { return start > value; }
-
-// const std::set<uint64_t> &IntervalBase::values() const { return cache; }
-
-} // namespace Utils::Maths
-
-// std::string IntervalBase::toString() const override
-// {
-//     return Utils::String::format("[{}...{}]", start, end);
-// }
+Interval operator-(const Interval &lhs, const Interval &rhs)
+{
+    // Self-safe by construction: result is a copy, so `a - a` never compares
+    // equal in operator-= and just removes everything the ordinary way.
+    Interval result = lhs;
+    result -= rhs;
+    return result;
+}
+}

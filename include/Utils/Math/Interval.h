@@ -15,7 +15,6 @@ class IntervalBase : public Traits::Stringify
 {
     uint64_t start = 0;
     uint64_t end = 0;
-    uint64_t m_size = 0;
     std::set<uint64_t> cache;
 
     void fill()
@@ -26,7 +25,7 @@ class IntervalBase : public Traits::Stringify
     }
 
   public:
-    IntervalBase(uint64_t from, uint64_t to) : start(from), end(to), m_size(to - from) { fill(); }
+    IntervalBase(uint64_t from, uint64_t to) : start(from), end(to) { fill(); }
 
     uint64_t getFrom() const { return start; }
     uint64_t getTo() const { return end; }
@@ -83,23 +82,7 @@ class Interval : public Traits::Stringify
 
   public:
     // void add(uint64_t from, uint64_t to) { Int m_bases.emplace_back(from, to); }
-    void add(IntervalBase base)
-    {
-        if (m_bases.empty())
-        {
-            m_bases.emplace_back(std::move(base));
-            cache();
-            return;
-        }
-
-        auto it = m_bases.begin();
-        while (it != m_bases.end() && *it < base)
-            ++it;
-
-        m_bases.insert(it, std::move(base));
-        fragment();
-    };
-
+    void add(IntervalBase base);
     void add(uint64_t from, uint64_t to) { add(IntervalBase(from, to)); }
     void add(uint64_t value) { add(IntervalBase{value, value}); }
 
@@ -114,68 +97,7 @@ class Interval : public Traits::Stringify
         }
     };
 
-    void remove(const IntervalBase &removal)
-    {
-        auto it = m_bases.begin();
-
-        while (it != m_bases.end())
-        {
-            // Existing interval is completely before removal.
-            if (*it < removal)
-            {
-                ++it;
-                continue;
-            }
-
-            // Existing interval is completely after removal.
-            if (*it > removal)
-                break;
-
-            const auto from = it->getFrom();
-            const auto to = it->getTo();
-
-            // removal completely covers this interval.
-            if (removal.getFrom() <= from && removal.getTo() >= to)
-            {
-                it = m_bases.erase(it);
-                continue;
-            }
-
-            // Removal cuts off the left side.
-            if (removal.getFrom() <= from)
-            {
-                *it = IntervalBase(removal.getTo() + 1, to);
-                break;
-            }
-
-            // Removal cuts off the right side.
-            if (removal.getTo() >= to)
-            {
-                *it = IntervalBase(from, removal.getFrom() - 1);
-                ++it;
-                continue;
-            }
-
-            // Removal is completely inside the existing interval.
-            // Split:
-            //
-            // [from ........ to]
-            //       [removal]
-            //
-            // -> [from..removal.from-1]
-            //    [removal.to+1..to]
-            auto right = IntervalBase(removal.getTo() + 1, to);
-
-            *it = IntervalBase(from, removal.getFrom() - 1);
-
-            m_bases.insert(std::next(it), std::move(right));
-
-            break;
-        }
-
-        cache();
-    }
-
+    void remove(const IntervalBase &removal);
     void remove(uint64_t from, uint64_t to) { remove(IntervalBase(from, to)); }
     void remove(uint64_t value) { remove(IntervalBase(value, value)); }
 
@@ -197,21 +119,7 @@ class Interval : public Traits::Stringify
         m_cache.clear();
     }
 
-    bool contains(uint64_t value)
-    {
-        for (auto &it : m_bases)
-        {
-            if (it.contains(value))
-            {
-                return true;
-            }
-            if (it > value)
-            {
-                break;
-            }
-        }
-        return false;
-    }
+    [[nodiscard]] bool contains(uint64_t value) const;
 
     [[nodiscard]] const std::vector<uint64_t> &values() const { return m_cache; }
 
@@ -220,36 +128,15 @@ class Interval : public Traits::Stringify
     friend Interval operator|(const Interval &lhs, const Interval &rhs);
     friend Interval operator&(const Interval &lhs, const Interval &rhs);
 
-    Interval &operator+=(uint64_t value)
-    {
-        add(value);
-        return *this;
-    }
+    Interval &operator+=(uint64_t value);
+    Interval &operator-=(uint64_t value);
 
-    Interval &operator-=(uint64_t value)
-    {
-        remove(value);
-        return *this;
-    }
-
-    Interval &operator|=(const Interval &other)
-    {
-        for (const auto &base : other.m_bases)
-            add(base);
-
-        return *this;
-    }
-
-    Interval &operator&=(const Interval &other)
-    {
-        *this = *this & other;
-        return *this;
-    }
-
-    Interval &operator-=(const Interval &other) {
-        for (const auto &base : other.m_bases) remove(base);
-        return *this;
-    }
+    // Set algebra against another Interval. Each guards against self-aliasing:
+    // walking other.m_bases while add()/remove() erase from that same list
+    // would invalidate the iterator.
+    Interval &operator|=(const Interval &other);
+    Interval &operator&=(const Interval &other);
+    Interval &operator-=(const Interval &other);
 
     [[nodiscard]] std::string toString() const override
     {
@@ -273,4 +160,6 @@ class Interval : public Traits::Stringify
 
 Interval operator|(const Interval &lhs, const Interval &rhs);
 Interval operator&(const Interval &lhs, const Interval &rhs);
+// Not a friend: it goes through operator-=, so it needs no private access.
+Interval operator-(const Interval &lhs, const Interval &rhs);
 } // namespace Utils::Maths
