@@ -56,8 +56,8 @@ RGB HSV::toRGB() const
     }
 
     // Convert to 0-255 range
-    return RGB(static_cast<uint8_t>(r * 255.0f), static_cast<uint8_t>(g * 255.0f),
-               static_cast<uint8_t>(b * 255.0f));
+    return RGB(static_cast<uint8_t>(r * 255.0f + 0.5f), static_cast<uint8_t>(g * 255.0f + 0.5f),
+               static_cast<uint8_t>(b * 255.0f + 0.5f));
 }
 
 std::string HSV::toString() const { return std::format("Hue: {}, Sat: {}, Val {}\n", h, s, v); }
