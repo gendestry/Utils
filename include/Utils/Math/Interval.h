@@ -246,6 +246,11 @@ class Interval : public Traits::Stringify
         return *this;
     }
 
+    Interval &operator-=(const Interval &other) {
+        for (const auto &base : other.m_bases) remove(base);
+        return *this;
+    }
+
     [[nodiscard]] std::string toString() const override
     {
         Utils::Text::Stream s;
