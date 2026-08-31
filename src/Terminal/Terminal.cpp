@@ -59,6 +59,11 @@ std::optional<Terminal::Escape> Terminal::isEscapeCharacter(char in)
         return Escape::BACKSPACE;
     }
 
+    if (c == '\t')
+    {
+        return Escape::TAB;
+    }
+
     if (c == '\033')
     {
         auto c1 = readNext();
@@ -123,6 +128,9 @@ void Terminal::handleEnter(std::string &input)
     std::cout << '\n';
     std::cout.flush();
 
+    if (m_onSubmitCallback)
+        m_onSubmitCallback(input);
+
     cursor.x = 0;
     input.clear();
 }
@@ -152,6 +160,36 @@ void Terminal::handleArrowRight(std::string &input)
         cursor.x++;
         term.moveCursorRight();
         term.flush();
+        return;
+    }
+
+    // At end of line: → accepts the ghost-text suggestion, fish-style.
+    acceptSuggestion(input);
+}
+
+void Terminal::handleTab(std::string &input) { acceptSuggestion(input); }
+
+std::optional<std::string> Terminal::currentSuggestion(const std::string &input)
+{
+    if (m_suggestCallback)
+    {
+        if (auto match = m_suggestCallback(input); match && match->size() > input.size())
+            return match;
+    }
+
+    if (auto histMatch = history.find(input))
+        return histMatch;
+
+    return std::nullopt;
+}
+
+void Terminal::acceptSuggestion(std::string &input)
+{
+    if (auto suggestion = currentSuggestion(input))
+    {
+        input = *suggestion;
+        cursor.x = input.size();
+        draw(input);
     }
 }
 void Terminal::handleArrowUp(std::string &input)
@@ -180,10 +218,8 @@ void Terminal::draw(const std::string &input)
 
     std::string suggestion;
 
-    if (auto histMatch = history.find(input))
-    {
-        suggestion = histMatch->substr(input.size());
-    }
+    if (auto match = currentSuggestion(input))
+        suggestion = match->substr(input.size());
 
     std::cout << input << Font::colorDim << suggestion << Font::colorReset;
 

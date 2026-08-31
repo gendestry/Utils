@@ -149,6 +149,15 @@ template <typename Ctx> class Registry
         return resolve({key}, args, ctx);
     }
 
+    std::vector<CmdPtr> complete(const std::string &prefix) const
+    {
+        std::vector<CmdPtr> out;
+        for (auto it = m_byKey.lower_bound(prefix);
+             it != m_byKey.end() && it->first.compare(0, prefix.size(), prefix) == 0; ++it)
+            out.push_back(it->second);
+        return out;
+    }
+
   private:
     static Resolution check(const CmdPtr &cmd, const Ctx &ctx)
     {

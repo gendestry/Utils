@@ -14,3 +14,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE utils)
 add_executable(regex_groups ${CMAKE_CURRENT_SOURCE_DIR}/regex_groups/main.cpp)
 
 target_link_libraries(regex_groups PRIVATE utils)
+
+add_executable(commands ${CMAKE_CURRENT_SOURCE_DIR}/commands/main.cpp)
+
+target_link_libraries(commands PRIVATE utils)
+
+add_executable(commands_terminal ${CMAKE_CURRENT_SOURCE_DIR}/commands_terminal/main.cpp)
+
+target_link_libraries(commands_terminal PRIVATE utils)
