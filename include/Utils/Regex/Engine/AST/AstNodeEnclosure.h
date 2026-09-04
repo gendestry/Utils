@@ -25,9 +25,8 @@ namespace Utils::Regex::Engine {
         }
 
         unsigned int _match(std::string text, unsigned int start, bool ignoreAllMathced = false) override;
-        // Match match(std::string text, unsigned int start, bool ignoreAllMathced = false) override;
         MatchInfo _match_info(std::string text, unsigned int start, bool ignoreAllMathced = false) override;
-        // std::optional<MatchInfo> match_info(std::string text, unsigned int start, bool ignoreAllMathced = false) override;
+        std::vector<MatchInfo> match_info_candidates(std::string text, unsigned int start, bool ignoreAllMatched) override;
 
         bool shouldCapture() const override;
 

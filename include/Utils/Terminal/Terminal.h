@@ -85,7 +85,8 @@ class Terminal
 
     void readInput()
     {
-        std::string input;
+        std::string input = "";
+
 
         while (true)
         {

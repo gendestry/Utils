@@ -16,9 +16,6 @@
 
 namespace Utils::Regex
 {
-    // Deliberately does not use Utils::Logger: Logger owns a Formatter, and a Formatter
-    // that parses its pattern with a Matcher would re-enter itself mid-construction.
-    // Tracing here goes through PRINT so the engine stays free of that cycle.
     class Matcher
     {
         bool m_Valid = true;
@@ -26,33 +23,9 @@ namespace Utils::Regex
         std::unique_ptr<Engine::Tokenizer> m_Tokenizer;
         std::unique_ptr<Engine::Syntax> m_Syntax;
 
-        // struct MatchResult {
-        //     std::string fullMatch;
-        //     std::vector<std::vector<Matc
-        // };
-
-
-        // struct MatchData {
-        //
-        // };
-        // struct MatchInfo {
-        //     unsigned int start;
-        //     std::string match;
-        //     std::string fullmatch;
-        //
-        //     std::vector<MatchInfo> groups;
-        //
-        //     MatchInfo(){}
-        //     MatchInfo(unsigned int start, std::string match)
-        //         : start(start), match(match) {}
-        //     MatchInfo(unsigned int start, std::string match, std::string fullmatch)
-        //         : start(start), match(match), fullmatch(fullmatch) {}
-        // };
-
     public:
         unsigned int lastMaxLength = 0;
 
-        // Regex() = delete;
         Matcher(const std::string& pattern);
         Matcher(const Matcher &other);
         Matcher(Matcher &&other) noexcept;
@@ -70,8 +43,6 @@ namespace Utils::Regex
         [[nodiscard]] std::optional<std::string> find(const std::string &text) const;
         [[nodiscard]] std::optional<Engine::MatchInfo> findInfo(const std::string &text) const;
 
-        // Like findInfo, but the returned MatchInfo also carries the {..} captures of that
-        // one match. Positions are absolute in `text`.
         [[nodiscard]] std::optional<Engine::MatchInfo> findGroupsInfo(const std::string &text) const;
         [[nodiscard]] std::optional<std::list<Engine::MatchInfo>> findAllGroupsInfo(const std::string &text) const;
 

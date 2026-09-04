@@ -81,73 +81,19 @@ MatchInfo AstNodeParen::_match_info(std::string text, unsigned int st, bool igno
     return info;
 }
 
-// Match AstNodeParen::match(std::string text, unsigned int start, bool ignoreAllMathced)
-// {
-//     unsigned int s = start;
-//     unsigned int m = _match(text, start, ignoreAllMathced);
-//
-//     switch (m_OpType) {
-//         case NONE:
-//             return {m != s, m};
-//         case PLUS:
-//             if (m != s)
-//             {
-//                 s = m;
-//                 m = _match(text, s, ignoreAllMathced);
-//
-//                 while (m != s)
-//                 {
-//                     s = m;
-//                     m = _match(text, s, ignoreAllMathced);
-//                 }
-//
-//                 return {true, m};
-//             }
-//
-//             return {false, s};
-//         case ASTERIX:
-//             while (m != s)
-//             {
-//                 s = m;
-//                 m = _match(text, s, ignoreAllMathced);
-//             }
-//
-//             return {true, m};
-//         case QUESTION_MARK:
-//             return {true, m};
-//         case RANGE:
-//             auto r1 = m_Range.start;
-//             auto r2 = m_Range.end;
-//             int i = 0;
-//             // min ammount
-//             for (; i < r1; i++) {
-//                 if (m != s) {
-//                     s = m;
-//                     m = _match(text, s, ignoreAllMathced);
-//                 }
-//                 else {
-//                     return {false, s};
-//                 }
-//             }
-//
-//             while (m != s)
-//             {
-//                 s = m;
-//                 m = _match(text, s, ignoreAllMathced);
-//                 i++;
-//             }
-//
-//             if (i <= r2)
-//             {
-//                 return {true, m};
-//             }
-//
-//             return {false, s};
-//         }
-//
-//
-//     return {false, s};
-// }
+std::vector<MatchInfo> AstNodeParen::match_info_candidates(std::string text, unsigned int start, bool ignoreAllMatched)
+{
+    return applyRepetition(start, [&](unsigned int pos)
+    {
+        std::vector<MatchInfo> candidates;
+        for (auto &branch : m_Ops)
+        {
+            auto branchCandidates = matchSequenceCandidates(branch, text, pos, ignoreAllMatched);
+            candidates.insert(candidates.end(), branchCandidates.begin(), branchCandidates.end());
+        }
+        return candidates;
+    });
+}
 
 std::string AstNodeParen::toString()
 {

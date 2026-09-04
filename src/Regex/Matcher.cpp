@@ -307,52 +307,55 @@ std::optional<MatchInfo> Matcher::matchGroupsInfo(const std::string &text) const
     return ret;
 }
 
+std::optional<MatchInfo> tryMatchFrom(Pattern& patterns, unsigned int i, const std::string &text, unsigned int pos, MatchInfo acc)
+{
+    if (i == patterns.size())
+    {
+        acc.start = pos;
+        return acc;
+    }
+
+    auto &pattern = patterns[i];
+    for (auto &candidate : pattern->match_info_candidates(text, pos))
+    {
+        MatchInfo next = acc;
+
+        if (!candidate.match.empty() && !pattern->shouldIgnore())
+        {
+            next.match += candidate.match;
+            Engine::AstNodeOps::collectGroups(next, *pattern, candidate);
+        }
+
+        if (auto result = tryMatchFrom(patterns, i + 1, text, candidate.start, next))
+            return result;   // this candidate led to a full match — done
+        // else: fall through and try this pattern's next (shorter) candidate
+    }
+
+    return std::nullopt;   // no candidate for patterns[i] leads to a full match
+}
+
 std::optional<MatchInfo> Matcher::findGroupsInfo(const std::string &text) const
 {
     if (!m_Valid)
         return {};
 
-    Engine::Pattern &patterns = m_Syntax->getPattern();
+    Pattern &patterns = m_Syntax->getPattern();
 
-    // Try to anchor the whole pattern at every position, first match wins.
     for (unsigned int offset = 0; offset < text.size(); offset++)
     {
         const std::string ctext = text.substr(offset);
-        MatchInfo ret;
-        unsigned int start = 0;
-        bool matchedAll = true;
 
-        for (auto &pattern : patterns)
-        {
-            PRINT(std::cout << "\n   Matching: " << pattern->toPrettyString() << " => ";)
+        MatchInfo seed;
+        seed.start = 0;
 
-            auto match = pattern->match_info(ctext, start, patterns.size() > 1);
-            if (!match.has_value())
-            {
-                PRINT(std::cout << "Not matched" << std::endl;)
-                matchedAll = false;
-                break;
-            }
-
-            PRINT(std::cout << "Matched: '" << match->match << "' ";)
-
-            if (!match->match.empty() && !pattern->shouldIgnore())
-            {
-                MatchInfo info = match.value();
-                normalizeSpans(info, offset);
-                Engine::AstNodeOps::collectGroups(ret, *pattern, info);
-                ret.match += match->match;
-            }
-            start = match->start;
-        }
-
-        if (!matchedAll || ret.match.empty())
+        auto result = tryMatchFrom(patterns, 0, ctext, 0, seed);
+        if (!result || result->match.empty())
             continue;
 
-        ret.start = offset;
-        ret.len = start;                        // characters consumed, ignored parts included
-        ret.fullmatch = ctext.substr(0, start); // ...and their text
-        return ret;
+        normalizeSpans(*result, offset);
+        result->start = offset;
+        result->len = result->match.size();       // note: see caveat below
+        return result;
     }
 
     return {};
