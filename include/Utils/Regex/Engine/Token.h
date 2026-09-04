@@ -44,6 +44,7 @@ namespace Utils::Regex::Engine
 
             WHITE_SPACE,
             TAB,
+            ANY,
 
         } type;
 
@@ -154,6 +155,9 @@ namespace Utils::Regex::Engine
                 break;
             case Token::EXCLAMATION:
                 type = "EXCLAMATION";
+                break;
+            case Token::ANY:
+                type = "ANY";
                 break;
             default:
                 type = "UNKNOWN";

@@ -15,7 +15,8 @@ namespace Utils::Regex::Engine {
             BIG_CHAR,
             ANY_CHAR,
             DIGIT,
-            NEWLINE
+            NEWLINE,
+            ANY
         } m_EscapeType;
 
         std::string toEscapeString()
@@ -32,6 +33,8 @@ namespace Utils::Regex::Engine {
                     return "\\d";
                 case NEWLINE:
                     return "\\n";
+                case ANY:
+                    return "\\A";
                 default:
                     return "\\X";
             }

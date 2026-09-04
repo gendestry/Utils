@@ -59,6 +59,10 @@ void Tokenizer::tokenize(bool ignore_whitespace)
             {
                 tokens.push_back(Token(i - 1, i, Token::NEWLINE));
             }
+            else if (c == 'A')
+            {
+                tokens.push_back(Token(i - 1, i, Token::ANY));
+            }
             else
             {
                 std::cout << "Error: unknown escape sequence" << std::endl;

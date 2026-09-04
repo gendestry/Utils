@@ -358,6 +358,9 @@ namespace Utils::Regex::Engine
         case Token::NEWLINE:
             m_EscapeType = EscapeType::NEWLINE;
             break;
+        case Token::ANY:
+            m_EscapeType = EscapeType::ANY;
+            break;
         default:
             return false;
         }

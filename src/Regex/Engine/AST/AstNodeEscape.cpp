@@ -50,6 +50,8 @@ unsigned int AstNodeEscape::_match(std::string text, unsigned int start, bool ig
             return start + 1;
         }
         break;
+    case ANY:
+        return start + 1;
     }
 
     return start;
@@ -180,6 +182,10 @@ MatchInfo AstNodeEscape::_match_info(std::string text, unsigned int start, bool 
             matchInfo.match = text[start];
             matchInfo.start = start + 1;
         }
+        break;
+    case ANY:
+        matchInfo.match = text[start];
+        matchInfo.start = start + 1;
         break;
     }
 
