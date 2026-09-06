@@ -99,9 +99,10 @@ namespace Utils::Regex::Engine
                 {
                     Pos opos = m_TokenPos - 1;
                     if (isOperator()) {
-                        opos++;
+                        opos = m_TokenPos - 1;
                     }
                     m_Op = new AstNodeCapture({m_Tokens[old].startPos, m_Tokens[opos].endPos}, ops, m_OpType);
+                    assignOp();
                     return true;
                 }
 
@@ -129,9 +130,10 @@ namespace Utils::Regex::Engine
                     {
                         Pos opos = m_TokenPos - 1;
                         if (isOperator()) {
-                            opos++;
+                            opos = m_TokenPos - 1;
                         }
                         m_Op = new AstNodeIgnore({m_Tokens[old].startPos, m_Tokens[opos].endPos}, ops, m_OpType);
+                        assignOp();
                         return true;
                     }
 
@@ -215,7 +217,7 @@ namespace Utils::Regex::Engine
             {
                 Pos opos = m_TokenPos - 1;
                 if (isOperator()) {
-                    opos++;
+                    opos = m_TokenPos - 1;
                 }
                 // isOperator();
                 if (enclosure) {
@@ -225,7 +227,7 @@ namespace Utils::Regex::Engine
                     m_Op = new AstNodeParen({m_Tokens[old].startPos, m_Tokens[opos].endPos}, or_ops, m_OpType);
 
                 }
-                assignRange();
+                assignOp();
                 return true;
             }
         }
@@ -241,7 +243,7 @@ namespace Utils::Regex::Engine
         {
             if (isOperator()) {
                 m_Op = new AstNodeEscape({m_Tokens[old].startPos, m_Tokens[m_TokenPos-1].endPos}, m_EscapeType, m_OpType);
-                assignRange();
+                assignOp();
 
             }
             else {
@@ -270,7 +272,7 @@ namespace Utils::Regex::Engine
             }
 
             m_Op = new AstNodeTxt({m_Tokens[old].startPos, m_Tokens[opos].endPos}, m_Tokens[old].txt_value, m_OpType);
-            assignRange();
+            assignOp();
 
             return true;
         }
@@ -313,7 +315,7 @@ namespace Utils::Regex::Engine
                             m_TokenPos++;
                             Pos opos = m_TokenPos - 1;
                             if (isOperator()) {
-                                opos++;
+                                opos = m_TokenPos - 1;
                             }
                             // isOperator();
 
@@ -323,7 +325,7 @@ namespace Utils::Regex::Engine
                             char v2 = t2.type == Token::C ? t2.c_value :static_cast<char>(t2.i_value + 48);
 
                             m_Op = new AstNodeRange({m_Tokens[old].startPos, m_Tokens[opos].endPos}, v1, v2, m_OpType);
-                            assignRange();
+                            assignOp();
 
                             return true;
                         }
@@ -371,6 +373,16 @@ namespace Utils::Regex::Engine
 
     bool Syntax::isOperator()
     {
+        m_Lazy = false;
+
+        // A '?' right after a repetition makes it lazy: +? *? ?? {n,m}?
+        auto takeLazy = [&]() {
+            if (m_TokenPos < m_Tokens.size() && m_Tokens[m_TokenPos].type == Token::QUESTION_MARK) {
+                m_Lazy = true;
+                m_TokenPos++;
+            }
+        };
+
         if (m_TokenPos >= m_Tokens.size())
         {
             m_OpType = OpType::NONE;
@@ -381,14 +393,17 @@ namespace Utils::Regex::Engine
             case Token::PLUS:
                 m_OpType = AstNodeOps::PLUS;
                 m_TokenPos++;
+                takeLazy();
                 return true;
             case Token::ASTERIX:
                 m_OpType = AstNodeOps::ASTERIX;
                 m_TokenPos++;
+                takeLazy();
                 return true;
             case Token::QUESTION_MARK:
                 m_OpType = AstNodeOps::QUESTION_MARK;
                 m_TokenPos++;
+                takeLazy();
                 return true;
             case Token::LCURLY:
                 auto old = m_TokenPos;
@@ -404,12 +419,14 @@ namespace Utils::Regex::Engine
                             if (m_Tokens[m_TokenPos].type == Token::RCURLY) {
                                 m_OpType = AstNodeOps::RANGE;
                                 m_TokenPos++;
+                                takeLazy();
                                 return true;
                             }
                         }
                     }
                 }
                 m_TokenPos = old;
+                m_OpType = AstNodeOps::NONE;
                 return false;
         }
 

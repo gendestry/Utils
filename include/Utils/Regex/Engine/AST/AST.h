@@ -85,6 +85,9 @@ class AstNodeOps
         NONE
     } m_OpType = NONE;
 
+    // Lazy (non-greedy) repetition: prefer the fewest iterations instead of the most.
+    bool m_Lazy = false;
+
     struct Location
     {
         int start;
@@ -143,13 +146,13 @@ class AstNodeOps
         switch (m_OpType)
         {
         case PLUS:
-            return "+";
+            return m_Lazy ? "+?" : "+";
         case ASTERIX:
-            return "*";
+            return m_Lazy ? "*?" : "*";
         case QUESTION_MARK:
-            return "?";
+            return m_Lazy ? "??" : "?";
         case RANGE:
-            return Utils::String::concat("{", m_Range.start, ",", m_Range.end, "}");
+            return Utils::String::concat("{", m_Range.start, ",", m_Range.end, "}", m_Lazy ? "?" : "");
         default:
             return "";
         }

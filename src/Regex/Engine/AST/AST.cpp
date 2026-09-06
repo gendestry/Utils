@@ -187,10 +187,19 @@ std::vector<MatchInfo> AstNodeOps::applyRepetition(unsigned int start,
 
     if (m_OpType == QUESTION_MARK)
     {
-        results = oneIteration(start);
         MatchInfo empty;
         empty.start = start;
-        results.push_back(empty);
+
+        // Lazy: try skipping the node before trying to match it.
+        if (m_Lazy)
+            results.push_back(empty);
+
+        for (auto &candidate : oneIteration(start))
+            results.push_back(candidate);
+
+        if (!m_Lazy)
+            results.push_back(empty);
+
         return results;
     }
 
@@ -223,7 +232,10 @@ std::vector<MatchInfo> AstNodeOps::applyRepetition(unsigned int start,
     seed.start = start;
     rec(0, start, seed);
 
-    std::reverse(results.begin(), results.end());
+    // rec() collects fewest-iterations-first; greedy wants the opposite order.
+    if (!m_Lazy)
+        std::reverse(results.begin(), results.end());
+
     return results;
 }
 

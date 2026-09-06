@@ -26,8 +26,16 @@ namespace Utils::Regex::Engine
         AstNodeOps *m_Op;
         OpType m_OpType = OpType::NONE;
         EscapeType m_EscapeType = EscapeType::CHAR;
+        bool m_Lazy = false;
 
         unsigned int range1 = 0, range2 = 0;
+
+        // The operator flags live on Syntax while parsing; hand them to the node just built.
+        void assignOp() {
+            if (m_Op != nullptr)
+                m_Op->m_Lazy = m_Lazy;
+            assignRange();
+        }
 
         void assignRange() {
             if (m_OpType == AstNodeOps::RANGE && m_Op != nullptr) {
