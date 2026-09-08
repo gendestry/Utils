@@ -33,6 +33,29 @@ void shiftSpans(MatchInfo &info, unsigned int offset)
 }
 } // namespace
 
+// Backtracking driver, defined below; declared here so the anchored entry points can use it.
+std::optional<MatchInfo> tryMatchFrom(Pattern &patterns, unsigned int i, const std::string &text,
+                                      unsigned int pos, MatchInfo acc, bool requireEnd = false);
+
+namespace
+{
+// Anchored match: the pattern must consume the whole text.
+std::optional<MatchInfo> matchWhole(Pattern &patterns, const std::string &text)
+{
+    MatchInfo seed;
+    seed.start = 0;
+
+    auto result = tryMatchFrom(patterns, 0, text, 0, seed, true);
+    if (!result)
+        return {};
+
+    normalizeSpans(*result, 0);
+    result->start = 0;
+    result->len = static_cast<unsigned int>(result->match.size());
+    return result;
+}
+} // namespace
+
 Matcher::Matcher(const std::string &pattern) : m_Pattern(pattern)
 {
     m_Tokenizer = std::make_unique<Engine::Tokenizer>(pattern);
@@ -94,30 +117,7 @@ bool Matcher::match(const std::string &text) const
     if (!m_Valid)
         return false;
 
-    std::string match;
-    Engine::Pattern &pattern = m_Syntax->getPattern();
-    unsigned int start = 0;
-
-    for (auto &i : pattern)
-    {
-        PRINT(std::cout << "\n   Matching: " << i->toPrettyString() << " => ";)
-
-        auto [matched, current] = i->match(text, start);
-        if (matched)
-        {
-            const std::string matchedText = text.substr(start, current - start);
-            PRINT(std::cout << "Matched: '" << matchedText << "' ";)
-            match += matchedText;
-        }
-        else
-        {
-            PRINT(std::cout << "Not matched" << std::endl;)
-            return false;
-        }
-        start = current;
-    }
-
-    return match.size() == text.size();
+    return matchWhole(m_Syntax->getPattern(), text).has_value();
 }
 
 std::optional<Engine::MatchInfo> Matcher::matchInfo(const std::string &text) const
@@ -125,39 +125,12 @@ std::optional<Engine::MatchInfo> Matcher::matchInfo(const std::string &text) con
     if (!m_Valid)
         return {};
 
-    MatchInfo ret;
-    ret.start = 0;
-
-    std::string match;
-    Engine::Pattern &pattern = m_Syntax->getPattern();
-    unsigned int start = 0;
-
-    for (auto &i : pattern)
-    {
-        PRINT(std::cout << "\n   Matching: " << i->toPrettyString() << " => ";)
-
-        auto [matched, current] = i->match(text, start);
-        if (matched)
-        {
-            const std::string matchedText = text.substr(start, current - start);
-            PRINT(std::cout << "Matched: '" << matchedText << "' ";)
-            match += matchedText;
-        }
-        else
-        {
-            PRINT(std::cout << "Not matched" << std::endl;)
-            return {};
-        }
-        start = current;
-    }
-
-    if (match.size() == 0)
-    {
+    auto result = matchWhole(m_Syntax->getPattern(), text);
+    if (!result || result->match.empty())
         return {};
-    }
 
-    ret.match = match;
-    return ret;
+    result->groups.clear();
+    return result;
 }
 
 std::optional<MatchInfo> Matcher::matchGroups(const std::string &text) const
@@ -234,83 +207,25 @@ std::optional<MatchInfo> Matcher::matchGroupsInfo(const std::string &text) const
     if (!m_Valid)
         return {};
 
-    MatchInfo ret;
-    // int group = 0;
-
-    Engine::Pattern &patterns = m_Syntax->getPattern();
-    unsigned int start = 0;
-    auto current = start;
-    std::vector<std::vector<MatchInfo>> groups;
-
-    std::string ctext = std::string(text);
-    unsigned int subs = 0;
-    Engine::Pos i = 0;
-    for (; i < patterns.size(); i++)
-    {
-        auto &pattern = patterns[i];
-        PRINT(std::cout << "\n   Matching: " << pattern->toPrettyString() << " => ";)
-
-        auto match = pattern->match_info(ctext, start, patterns.size() > 1);
-        bool matched = match.has_value();
-
-        if (matched)
-        {
-            current = match->start;
-            std::string matchedText = match->match;
-            PRINT(std::cout << "Matched: '" << matchedText << "' ";)
-
-            // if (!match->groups.empty()) {
-            //     groups.push_back(match->groups);
-            //     for (auto& group : match->groups) {
-            //         std::cout << group.match << std::endl;
-            //     }
-            // }
-
-            if (matchedText.empty())
-            {
-                continue;
-            }
-
-            if (!pattern->shouldIgnore())
-            {
-                MatchInfo info = match.value();
-                normalizeSpans(info, subs);
-                Engine::AstNodeOps::collectGroups(ret, *pattern, info);
-                ret.match += matchedText;
-            }
-            ret.fullmatch += matchedText;
-        }
-        else
-        {
-            PRINT(std::cout << "Not matched" << std::endl;)
-            if (ctext.size() == 1)
-            {
-                break;
-            }
-            ctext = ctext.substr(1);
-            subs++;
-            i--;
-        }
-        start = current;
-    }
-
-    if (i < patterns.size())
-    {
+    // Anchored counterpart of findGroupsInfo: same backtracking machinery, but the
+    // pattern has to cover the whole text.
+    auto result = matchWhole(m_Syntax->getPattern(), text);
+    if (!result || result->match.empty())
         return {};
-    }
-    // m_MaxMatch = start;
-    if (ret.match.size() != text.size())
-        return std::nullopt;
 
-    ret.start = subs;
-    ret.len = static_cast<unsigned int>(ret.match.size());
-    return ret;
+    result->fullmatch = result->match;
+    return result;
 }
 
-std::optional<MatchInfo> tryMatchFrom(Pattern& patterns, unsigned int i, const std::string &text, unsigned int pos, MatchInfo acc)
+std::optional<MatchInfo> tryMatchFrom(Pattern &patterns, unsigned int i, const std::string &text, unsigned int pos, MatchInfo acc, bool requireEnd)
 {
     if (i == patterns.size())
     {
+        // Anchored callers need a candidate that consumes everything; keep
+        // backtracking instead of accepting one that stops short.
+        if (requireEnd && pos != text.size())
+            return {};
+
         acc.start = pos;
         return acc;
     }
@@ -326,7 +241,7 @@ std::optional<MatchInfo> tryMatchFrom(Pattern& patterns, unsigned int i, const s
             Engine::AstNodeOps::collectGroups(next, *pattern, candidate);
         }
 
-        if (auto result = tryMatchFrom(patterns, i + 1, text, candidate.start, next))
+        if (auto result = tryMatchFrom(patterns, i + 1, text, candidate.start, next, requireEnd))
             return result;   // this candidate led to a full match — done
         // else: fall through and try this pattern's next (shorter) candidate
     }
@@ -402,46 +317,13 @@ std::optional<MatchInfo> Matcher::findInfo(const std::string &text) const
     if (!m_Valid)
         return {};
 
-    std::string match;
-
-    Engine::Pattern &patterns = m_Syntax->getPattern();
-    unsigned int start = 0;
-
-    std::string ctext = std::string(text);
-    unsigned int subs = 0;
-    Engine::Pos i = 0;
-    for (; i < patterns.size(); i++)
-    {
-        auto &pattern = patterns[i];
-        PRINT(std::cout << "\n   Matching: " << pattern->toPrettyString() << " => ";)
-
-        auto [matched, current] = pattern->match(ctext, start);
-        if (matched)
-        {
-            std::string matchedText = ctext.substr(start, current - start);
-            PRINT(std::cout << "Matched: '" << matchedText << "' ";)
-            match += matchedText;
-        }
-        else
-        {
-            PRINT(std::cout << "Not matched" << std::endl;)
-            if (ctext.size() == 1)
-            {
-                break;
-            }
-            ctext = ctext.substr(1);
-            subs++;
-            i--;
-        }
-        start = current;
-    }
-
-    if (i < patterns.size())
-    {
+    // Same scan as findGroupsInfo - the two differ only in whether groups are kept.
+    auto result = findGroupsInfo(text);
+    if (!result)
         return {};
-    }
-    // m_MaxMatch = start;
-    return MatchInfo{subs, match};
+
+    result->groups.clear();
+    return result;
 }
 
 std::optional<std::list<std::string>> Matcher::findAll(const std::string &text)
@@ -485,7 +367,8 @@ std::optional<std::list<MatchInfo>> Matcher::findAllInfo(const std::string &text
             acc += value.start;
             value.start = acc;
             matches.push_back(value);
-            acc += value.match.size();
+            // A zero-width match would spin here forever, so always step at least one char.
+            acc += std::max<std::size_t>(1u, value.match.size());
 
             ctext = text.substr(acc);
             if (ctext.empty())

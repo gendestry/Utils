@@ -13,29 +13,48 @@ void Tokenizer::tokenize(bool ignore_whitespace)
     int start = 0;
     for (int i = 0; i < pattern.size(); i++)
     {
-        std::optional<char> prev;
-        if (i > 0) {
-            prev = pattern[i - 1];
-        }
         char c = pattern[i];
 
         switch (c)
         {
         case '\'':
+        {
+            // A literal runs to the next unescaped quote. \' and \\ stand for the
+            // quote and the backslash themselves, so both can appear in a literal.
             start = i++;
+            std::string value;
+            bool closed = false;
+
             for (; i < pattern.size(); i++)
             {
                 c = pattern[i];
 
-                if (c == '\'' && prev.has_value() && prev.value() != '\\')
+                if (c == '\\' && i + 1 < pattern.size() &&
+                    (pattern[i + 1] == '\'' || pattern[i + 1] == '\\'))
                 {
-                    tokens.push_back(Token(start, i, Token::TXT, pattern.substr(start + 1, i - start - 1)));
+                    value += pattern[++i];
+                    continue;
+                }
+
+                if (c == '\'')
+                {
+                    closed = true;
                     break;
                 }
 
-                prev = c;
+                value += c;
+            }
+
+            if (closed)
+            {
+                tokens.push_back(Token(start, i, Token::TXT, value));
+            }
+            else
+            {
+                std::cout << "Error: unterminated literal" << std::endl;
             }
             break;
+        }
 
         case '\\':
             c = pattern[++i];
@@ -140,6 +159,12 @@ void Tokenizer::tokenize(bool ignore_whitespace)
                 }
 
                 tokens.push_back(Token(prevpos, --i, Token::N, std::atoi(number.str().c_str())));
+            }
+            else
+            {
+                // Unquoted punctuation used to be dropped here, silently changing
+                // the pattern; emit a token so the parser can reject it.
+                tokens.push_back(Token(i, i, Token::UNKNOWN, c));
             }
         };
     }

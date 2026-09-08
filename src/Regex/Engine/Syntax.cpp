@@ -12,20 +12,24 @@ namespace Utils::Regex::Engine
 {
     bool Syntax::parse()
     {
-        if (isInter())
+        if (!isInter())
+            return false;
+
+        while (m_TokenPos < m_Tokens.size() && isInter())
+            ;
+
+        // Leftover tokens mean part of the pattern was silently ignored - an
+        // unquoted terminal like `d` or `;` would otherwise just vanish.
+        if (m_TokenPos < m_Tokens.size())
         {
-            if (m_TokenPos >= m_Tokens.size()) {
-                return true;
-            }
-            while (isInter()) {
-                if (m_TokenPos >= m_Tokens.size()) {
-                    return true;
-                }
-            }
-            return true;
+            std::cout << "Error: unexpected token at position "
+                      << m_Tokens[m_TokenPos].startPos
+                      << " (" << m_Tokens[m_TokenPos].toString() << ")"
+                      << ", did you forget to quote it?" << std::endl;
+            return false;
         }
 
-        return false;
+        return true;
     }
 
     bool Syntax::isInter()

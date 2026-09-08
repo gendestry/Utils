@@ -11,8 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Collect source files
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
-add_library(${PROJECT_NAME} STATIC ${SOURCES}
-        include/Utils/Commands/CommandTerminal.h)
+add_library(${PROJECT_NAME} STATIC ${SOURCES})
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC

@@ -3,6 +3,7 @@
 // match in the text and reports each match together with the groups inside it.
 //
 
+#include "Utils/File/File.h"
 #include "Utils/Regex/Matcher.h"
 #include <iostream>
 #include <print>
@@ -40,6 +41,58 @@ static void dump(const Regex::Matcher &matcher, const std::string &text)
     std::println("");
 }
 
+std::string normalize_spaces(const std::string &input)
+{
+    std::string result;
+    result.reserve(input.size());
+
+    bool in_quotes = false;
+    bool prev_was_space = false;
+
+    for (size_t i = 0; i < input.size(); ++i)
+    {
+        char c = input[i];
+
+        if (c == '"')
+        {
+            in_quotes = !in_quotes;
+            result += c;
+            prev_was_space = false;
+            continue;
+        }
+
+        if (in_quotes)
+        {
+            // inside quotes: copy everything exactly
+            result += c;
+            continue;
+        }
+
+        if (c == ' ' || c == '\t')
+        {
+            // // outside quotes: collapse whitespace
+            // if (!prev_was_space)
+            // {
+            //     result += ' ';
+            //     prev_was_space = true;
+            // }
+        }
+        else
+        {
+            result += c;
+            // prev_was_space = false;
+        }
+    }
+
+    // optional: trim trailing space
+    if (!result.empty() && result.back() == ' ')
+    {
+        result.pop_back();
+    }
+
+    return result;
+}
+
 int main()
 {
     Regex::Matcher flagRegex(R"('AB'{\A}+'X')");
@@ -47,6 +100,10 @@ int main()
     flagRegex.prettyPrint();
 
     dump(flagRegex, "ABCCCX");
+
+    auto s = File::read("test.txt");
+    auto s2 = normalize_spaces(s.value());
+    std::cout << s2 << std::endl;
     // '%', then an optional captured width like "-3" or "1", then any flag character.
     // Regex::Matcher flagRegex(R"('%'{'-'?\d+}?\T)");
     // flagRegex.prettyPrint();

@@ -46,6 +46,10 @@ namespace Utils::Regex::Engine
             TAB,
             ANY,
 
+            // A character the tokenizer does not recognise. No grammar rule accepts
+            // it, so it makes parse() fail instead of silently vanishing.
+            UNKNOWN,
+
         } type;
 
         Token(int startPos, int endPos, Type type)
@@ -79,7 +83,7 @@ namespace Utils::Regex::Engine
             this->txt_value = txt_value;
         }
 
-        std::string toString()
+        std::string toString() const
         {
             std::string type;
             switch (this->type)
@@ -165,6 +169,8 @@ namespace Utils::Regex::Engine
             }
 
             // return type;
+            if (this->type == Token::UNKNOWN)
+                return type + "<" + std::string(1, c_value) + ">";
             if (this->type == Token::TXT)
                 return type + "<" + txt_value + ">";
             if (this->type == Token::N)
