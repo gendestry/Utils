@@ -8,7 +8,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/lulcek/main.cpp
-        curves/main.cpp)
+        curves/main.cpp
+        terminal/main.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE utils)
 
@@ -23,6 +24,15 @@ target_link_libraries(commands PRIVATE utils)
 add_executable(commands_terminal ${CMAKE_CURRENT_SOURCE_DIR}/commands_terminal/main.cpp)
 
 target_link_libraries(commands_terminal PRIVATE utils)
+
+add_executable(terminal ${CMAKE_CURRENT_SOURCE_DIR}/terminal/main.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/terminal/Terminal.cpp
+        terminal/KeyEvent.h
+)
+
+#add_executable(terminal ${CMAKE_CURRENT_SOURCE_DIR}/terminal/main.cpp)
+
+target_link_libraries(terminal PRIVATE utils)
 
 add_executable(curves ${CMAKE_CURRENT_SOURCE_DIR}/curves/main.cpp)
 
