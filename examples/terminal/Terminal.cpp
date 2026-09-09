@@ -6,7 +6,7 @@
 // using namespace Utils::Terminal;
 
 // Terminal::Terminal(std::function<void()> exitCallback) : m_exitCallack(std::move(exitCallback))
-Terminal::Terminal()
+Terminal::Terminal() : m_index(screenBounds())
 {
     tcgetattr(STDIN_FILENO, &original);
 
@@ -17,6 +17,11 @@ Terminal::Terminal()
 
     // Don't echo typed characters.
     raw.c_lflag &= ~(ECHO);
+
+    // Deliver ctrl-c and ctrl-\ as ordinary bytes instead of letting the line discipline
+    // turn them into SIGINT/SIGQUIT -- otherwise Escape::CTRL_C never reaches readInput()
+    // and the process is killed instead.
+    raw.c_lflag &= ~(ISIG);
 
     // Read one character at a time.
     raw.c_cc[VMIN] = 1;
@@ -30,12 +35,71 @@ Terminal::Terminal()
     term.showCursor();
 }
 
-std::pair<int, int> Terminal::getSize() {
+std::pair<int, int> Terminal::getSize()
+{
     struct winsize ws{};
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != 0)
         return {0, 0};
 
     return {ws.ws_row, ws.ws_col};
+}
+
+void Terminal::reindex()
+{
+    // The boundary has to contain every widget, not just the screen -- a widget hanging
+    // off the edge would otherwise be rejected and vanish from all queries.
+    Utils::Maths::Rectangle boundary = screenBounds();
+    for (const std::unique_ptr<Renderable> &r : m_renderables)
+        boundary = boundary.united(r->bounds);
+
+    m_index = Utils::Quadtree<Renderable *>(boundary);
+    for (const std::unique_ptr<Renderable> &r : m_renderables)
+        m_index.insert(r->bounds, r.get());
+}
+
+Renderable *Terminal::hitTest(Utils::Maths::Point p) const
+{
+    // The quadtree yields overlapping widgets in no particular order, so resolve the
+    // tie by insertion order: the last one added is on top.
+    Renderable *top = nullptr;
+    size_t topIndex = 0U;
+
+    m_index.query(p, [&](Renderable *candidate) {
+        for (size_t i = 0U; i < m_renderables.size(); i++)
+        {
+            if (m_renderables[i].get() != candidate)
+                continue;
+
+            if (top == nullptr || i >= topIndex)
+            {
+                top = candidate;
+                topIndex = i;
+            }
+            break;
+        }
+    });
+
+    return top;
+}
+
+std::vector<Renderable *> Terminal::renderablesIn(const Utils::Maths::Rectangle &area) const
+{
+    return m_index.query(area);
+}
+
+void Terminal::render()
+{
+    term.clearScreenAndMoveHome();
+
+    for (const std::unique_ptr<Renderable> &r : m_renderables)
+    {
+        // Escape codes are 1-based, the Rectangle is 0-based.
+        term.moveCursorToPosition(static_cast<uint16_t>(r->bounds.top()) + 1U,
+                                  static_cast<uint16_t>(r->bounds.left()) + 1U);
+        r->render(term);
+    }
+
+    term.flush();
 }
 
 std::optional<char> Terminal::readNext()

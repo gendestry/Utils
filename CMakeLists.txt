@@ -11,7 +11,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Collect source files
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
-add_library(${PROJECT_NAME} STATIC ${SOURCES})
+add_library(${PROJECT_NAME} STATIC ${SOURCES}
+        include/Utils/Math/Point.h
+        include/Utils/Math/Rectangle.h
+        include/Utils/Storage/Quadtree.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC

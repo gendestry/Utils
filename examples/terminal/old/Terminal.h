@@ -1,5 +1,6 @@
 #pragma once
 // #include "History.h"
+#include "KeyEvent.h"
 #include "TerminalManipulation.h"
 #include "Utils/Math/Rectangle.h"
 #include "Utils/Storage/Quadtree.h"
@@ -61,32 +62,23 @@ class Terminal
     std::vector<std::unique_ptr<Renderable>> m_renderables;
     Utils::Quadtree<Renderable *> m_index;
 
-    enum class Escape
-    {
-        CTRL_C,
-        CTRL_D,
-        ENTER,
-        BACKSPACE,
-        ARROW_UP,
-        ARROW_DOWN,
-        ARROW_LEFT,
-        ARROW_RIGHT,
-        CTRL_ARROW_LEFT,
-        CTRL_ARROW_RIGHT,
-        TAB
-    };
+    // The buffer the handlers edit. It has to be a member: dispatch fixes every handler
+    // signature to bool(T&), so there is no longer a parameter to thread it through.
+    std::string m_input;
+    bool m_running = true;
 
     std::optional<char> readNext();
-    std::optional<Escape> isEscapeCharacter(char in);
 
-    void handleEnter(std::string &input);
-    void handleBackspace(std::string &input);
-
-    void handleArrowLeft();
-    void handleArrowRight(std::string &input);
-    void handleArrowUp(std::string &input);
-    void handleArrowDown(std::string &input);
-    void handleTab(std::string &input);
+    // Returning true marks the event handled, which is what Event::handled is for.
+    bool onChar(CharEvent &e);
+    bool onEnter(EnterEvent &e);
+    bool onBackspace(BackspaceEvent &e);
+    bool onTab(TabEvent &e);
+    bool onArrowLeft(ArrowLeftEvent &e);
+    bool onArrowRight(ArrowRightEvent &e);
+    bool onArrowUp(ArrowUpEvent &e);
+    bool onArrowDown(ArrowDownEvent &e);
+    bool onQuit(Event &e);
 
   public:
     Terminal();
@@ -134,6 +126,13 @@ class Terminal
     void reindex();
 
     void render();
+
+    // Decodes one byte into an event, pulling any further bytes an escape sequence needs
+    // straight from stdin. Null when the sequence is malformed or truncated.
+    std::unique_ptr<Event> parseEvent(char in);
+
+    // Routes one event to its handler. The Application::OnEvent analogue.
+    void onEvent(Event &e);
 
     void readInput();
     void draw(const std::string &input);
