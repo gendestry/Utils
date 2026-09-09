@@ -7,18 +7,26 @@ enum class EventType
     CTRL_D,
     ENTER,
     BACKSPACE,
+    TAB,
     ARROW_UP,
     ARROW_DOWN,
     ARROW_LEFT,
     ARROW_RIGHT,
     CTRL_ARROW_LEFT,
     CTRL_ARROW_RIGHT,
-    TAB
 };
 
-#define EVENT_CLASS_TYPE(type) static EventType GetStaticType() { return EventType::type; }\
-								virtual EventType GetEventType() const override { return GetStaticType(); }\
-								virtual const char* GetName() const override { return #type; }
+#define EVENT_CLASS_TYPE(type) static EventType getStaticType() { return EventType::type; }\
+								virtual EventType getEventType() const override { return getStaticType(); }\
+								virtual const char* getName() const override { return #type; }
+
+struct Mods { bool shift, alt, ctrl, super; };
+
+static Mods decodeMods(int param)   // param from ESC[1;<param><final>
+{
+    int m = (param > 0 ? param - 1 : 0);
+    return { bool(m & 1), bool(m & 2), bool(m & 4), bool(m & 8) };
+}
 
 class Event
 {
@@ -32,6 +40,48 @@ public:
     virtual std::string toString() const { return getName(); }
 };
 
+class EventEnter : public Event
+{
+public:
+    EVENT_CLASS_TYPE(ENTER);
+};
+
+class EventBackspace : public Event
+{
+public:
+    EVENT_CLASS_TYPE(BACKSPACE);
+};
+
+class EventTab : public Event
+{
+public:
+    EVENT_CLASS_TYPE(TAB);
+};
+
+class EventArrowUp : public Event
+{
+public:
+    EVENT_CLASS_TYPE(ARROW_UP);
+};
+
+class EventArrowDown : public Event
+{
+public:
+    EVENT_CLASS_TYPE(ARROW_DOWN);
+};
+
+class EventArrowLeft : public Event
+{
+public:
+    EVENT_CLASS_TYPE(ARROW_LEFT);
+};
+
+class EventArrowRight : public Event
+{
+public:
+    EVENT_CLASS_TYPE(ARROW_RIGHT);
+};
+
 class EventDispatcher
 {
 public:
@@ -39,8 +89,6 @@ public:
         : m_event(event)
     {
     }
-
-    // F will be deduced by the compiler
     template<typename T, typename F>
     bool dispatch(const F& func)
     {
@@ -54,8 +102,3 @@ public:
 private:
     Event& m_event;
 };
-//
-// inline std::ostream& operator<<(std::ostream& os, const Event& e)
-// {
-//     return os << e.toString();
-// }
