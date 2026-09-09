@@ -18,11 +18,6 @@ Terminal::Terminal()
     // Don't echo typed characters.
     raw.c_lflag &= ~(ECHO);
 
-    // Deliver ctrl-c and ctrl-\ as ordinary bytes instead of letting the line discipline
-    // turn them into SIGINT/SIGQUIT -- otherwise Escape::CTRL_C never reaches readInput()
-    // and the process is killed instead.
-    raw.c_lflag &= ~(ISIG);
-
     // Read one character at a time.
     raw.c_cc[VMIN] = 1;
     raw.c_cc[VTIME] = 0;
@@ -35,8 +30,7 @@ Terminal::Terminal()
     term.showCursor();
 }
 
-std::pair<int, int> Terminal::getSize()
-{
+std::pair<int, int> Terminal::getSize() {
     struct winsize ws{};
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != 0)
         return {0, 0};
@@ -192,6 +186,7 @@ void Terminal::readInput()
         auto opt = readNext();
         if (!opt.has_value())
         {
+            // m_exitCallack();
             return;
         }
 
@@ -204,6 +199,8 @@ void Terminal::readInput()
             Escape esc = escapeOpt.value();
             if (esc == Escape::CTRL_C || esc == Escape::CTRL_D)
             {
+                // std::cout << "\r\033[2K\n";
+                // m_exitCallack();
                 return;
             }
 
@@ -239,17 +236,34 @@ void Terminal::readInput()
 
             if (esc == Escape::TAB)
             {
+                // handleTab(input);
             }
 
             continue;
         }
 
+        // input.insert(input.begin() + cursor.x, c);
+        // cursor.x++;
         draw(input);
     }
 }
 
 void Terminal::draw(const std::string &input)
 {
+    // term.carriageReturn();
+    // term.clearLine();
+
+    // std::string suggestion;
+    //
+    // if (auto match = currentSuggestion(input))
+    //     suggestion = match->substr(input.size());
+    //
+    // std::cout << input << Utils::Font::colorDim << suggestion << Utils::Font::colorReset;
+    //
+    // const size_t charsAfterCursor = suggestion.size() + (input.size() - cursor.x);
+    //
+    // if (charsAfterCursor > 0)
+    //     term.moveCursorLeft(charsAfterCursor);
 
     term.flush();
 }
