@@ -60,6 +60,22 @@ struct TerminalManipulation
     void showCursor() { std::cout << "\033[?25h"; }
 
     // --------------------------------------------------------
+    // Mouse reporting
+    // --------------------------------------------------------
+
+    // 1003 (the default) reports every motion, so widgets can react to hover; 1002 reports
+    // motion only while a button is held, which is quieter if drags are all you need. 1006
+    // asks for the SGR encoding, which has no 223-column limit and reports releases with a
+    // distinct final byte. Must be turned off again before exit, or the shell keeps
+    // receiving mouse escapes.
+    void enableMouse(bool reportHover = true)
+    {
+        std::cout << (reportHover ? "\033[?1003h" : "\033[?1002h") << "\033[?1006h";
+    }
+
+    void disableMouse() { std::cout << "\033[?1006l\033[?1003l\033[?1002l"; }
+
+    // --------------------------------------------------------
     // Text formatting
     // --------------------------------------------------------
 

@@ -1,5 +1,6 @@
 #include "../../include/Utils/Terminal/Terminal.h"
 #include "Utils/Colors/Font.h"
+#include "Utils/Terminal/Events/MouseEvent.h"
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -31,7 +32,9 @@ Terminal::Terminal()
 
     tcsetattr(STDIN_FILENO, TCSANOW, &raw);
 
+    term.enableMouse();
     term.showCursor();
+    term.flush();
 }
 
 std::pair<int, int> Terminal::getSize()
@@ -94,6 +97,16 @@ std::optional<Terminal::Escape> Terminal::isEscapeCharacter(char in)
         if (c2.has_value())
         {
             char val = c2.value();
+
+            // SGR mouse report: ESC [ < Cb ; Cx ; Cy M|m
+            if (val == '<')
+            {
+                pendingMouse = readSgrMouse();
+                if (!pendingMouse)
+                    return std::nullopt;
+                return Escape::MOUSE;
+            }
+
             switch (val)
             {
             case 'A':
@@ -139,10 +152,62 @@ std::optional<Terminal::Escape> Terminal::isEscapeCharacter(char in)
     return std::nullopt;
 };
 
+// Called with "ESC [ <" already consumed. Cb is a bitfield: low two bits pick the button
+// (3 = none), bit 2/3/4 are shift/alt/ctrl, bit 5 marks motion and bit 6 the scroll wheel.
+std::unique_ptr<Event> Terminal::readSgrMouse()
+{
+    int nums[3] = {0, 0, 0};
+    int i = 0;
+    char final = 0;
+
+    while (true)
+    {
+        auto c = readNext();
+        if (!c)
+            return nullptr;
+
+        if (*c >= '0' && *c <= '9')
+            nums[i] = nums[i] * 10 + (*c - '0');
+        else if (*c == ';' && i < 2)
+            ++i;
+        else if (*c == 'M' || *c == 'm')
+        {
+            final = *c;
+            break;
+        }
+        else
+            return nullptr; // Malformed -- drop the sequence rather than leak it as input.
+    }
+
+    const int cb = nums[0];
+    const int x = nums[1];
+    const int y = nums[2];
+    const Mods mods{bool(cb & 4), bool(cb & 8), bool(cb & 16), false};
+
+    if (cb & 64)
+        return std::make_unique<EventMouseScrolled>(x, y, mods, (cb & 1) ? -1 : 1);
+
+    const MouseButton button = static_cast<MouseButton>(cb & 3);
+
+    if (cb & 32)
+    {
+        if (button == MouseButton::None)
+            return std::make_unique<EventMouseMoved>(x, y, mods);
+        return std::make_unique<EventMouseDragged>(button, x, y, mods);
+    }
+
+    if (final == 'm')
+        return std::make_unique<EventMouseReleased>(button, x, y, mods);
+
+    return std::make_unique<EventMousePressed>(button, x, y, mods);
+}
+
 std::unique_ptr<Event> Terminal::makeEvent(Escape esc)
 {
     switch (esc)
     {
+    case Escape::MOUSE:
+        return std::move(pendingMouse);
     case Escape::CTRL_C:
         return std::make_unique<EventCtrlC>();
     case Escape::ENTER:

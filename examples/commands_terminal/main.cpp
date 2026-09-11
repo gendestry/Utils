@@ -5,8 +5,8 @@
 // dim ghost text while you type. Ctrl+C / Ctrl+D to quit.
 //
 
+#include "../../include/Utils/Terminal/old/TerminalSingleton.h"
 #include "Utils/Commands/CommandTerminal.h"
-#include "Utils/Terminal/TerminalSingleton.h"
 #include <cstdlib>
 #include <print>
 #include <string>

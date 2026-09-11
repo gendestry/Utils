@@ -29,18 +29,29 @@ class Terminal : public Iface::OnEvent
         ARROW_RIGHT,
         CTRL_ARROW_LEFT,
         CTRL_ARROW_RIGHT,
-        TAB
+        TAB,
+        MOUSE
     };
+
+    // A mouse report carries a position and a button, which Escape can't hold, so the parser
+    // builds the event itself and leaves it here for makeEvent() to hand over.
+    std::unique_ptr<Events::Event> pendingMouse;
 
     std::optional<char> readNext();
     std::optional<Escape> isEscapeCharacter(char in);
-    static std::unique_ptr<Events::Event> makeEvent(Escape esc);
+    std::unique_ptr<Events::Event> readSgrMouse();
+    std::unique_ptr<Events::Event> makeEvent(Escape esc);
 
     void handleEnter(std::string &input);
 
 public:
     Terminal();
-    ~Terminal() { tcsetattr(STDIN_FILENO, TCSANOW, &original); }
+    ~Terminal()
+    {
+        term.disableMouse();
+        term.flush();
+        tcsetattr(STDIN_FILENO, TCSANOW, &original);
+    }
 
     static std::pair<int, int> getSize();
     Helper::TerminalManipulation &manipulate(){return term;}

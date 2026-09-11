@@ -42,16 +42,19 @@ struct InputText : public Iface::Renderable
                 text.erase(--cursor, 1);
             return true;
         });
+        // At either end the arrow is left unhandled, so the Screen can move focus off the input.
         d.dispatch<EventArrowLeft>([&](EventArrowLeft&)
         {
-            if (cursor > 0)
-                --cursor;
+            if (cursor == 0)
+                return false;
+            --cursor;
             return true;
         });
         d.dispatch<EventArrowRight>([&](EventArrowRight&)
         {
-            if (cursor < text.size())
-                ++cursor;
+            if (cursor >= text.size())
+                return false;
+            ++cursor;
             return true;
         });
         d.dispatch<EventEnter>([&](EventEnter&)
@@ -72,9 +75,10 @@ struct InputText : public Iface::Renderable
         term.noUnderline();
     }
 
-    void placeCursor(Helper::TerminalManipulation& term) const override
+    bool placeCursor(Helper::TerminalManipulation& term) const override
     {
         term.moveCursorToPosition(uint16_t(top()), uint16_t(left() + cursor));
+        return true;
     }
 };
 }
