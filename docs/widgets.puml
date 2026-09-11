@@ -1,0 +1,89 @@
+@startuml widgets
+title Terminal — who implements what
+
+skinparam shadowing false
+hide empty members
+
+package "Iface" #F8F8F8 {
+  interface OnEvent
+  interface OnHover
+  interface OnClick
+  interface OnFocus
+  interface OnKey
+  interface Invalidatable {
+    +owner : Invalidator*
+    +invalidate()
+  }
+  interface Invalidator {
+    +invalidate(Renderable&)
+  }
+}
+
+abstract class Renderable {
+  +render(TerminalManipulation&) <<pure>>
+  +focusable() : bool
+  +hittable() : bool
+  +subscriptions : Capabilities
+}
+
+Renderable ..|> OnEvent
+Renderable ..|> Invalidatable
+
+package "Components" #F8F8F8 {
+  class Label
+  class Button
+  class Checklist
+  class Container {
+    +children : vector<unique_ptr<Renderable>>
+    +focusables : Quadtree
+    #onUnhandled(Event&) <<virtual>>
+  }
+  class NavContainer
+}
+
+class Screen {
+  +root : unique_ptr<Renderable>
+  +dirty : set<Renderable*>
+  +onEvent(Event&)
+  +render(TerminalManipulation&)
+}
+
+Label      --|> Renderable
+Button     --|> Renderable
+Checklist  --|> Renderable
+Container  --|> Renderable
+NavContainer --|> Container
+
+Button    ..|> OnHover
+Button    ..|> OnClick
+Button    ..|> OnFocus
+
+Checklist ..|> OnHover
+Checklist ..|> OnClick
+Checklist ..|> OnFocus
+Checklist ..|> OnKey
+
+Container ..|> OnHover
+Container ..|> Invalidator
+Screen    ..|> Invalidator
+
+Screen o-- Renderable : owns the tree
+
+note right of Label
+  Implements nothing.
+  Never hit-tested, never
+  routed to — CSS
+  pointer-events:none,
+  for free.
+end note
+
+note bottom of Renderable
+  **Implementing an interface IS subscribing.**
+  `Capabilities` is a bitmask worked out once,
+  when the widget is added, from the interfaces
+  it implements. Routing tests the mask — no
+  dynamic_cast per event, and a subtree that
+  ignores the mouse is skipped in one test.
+end note
+
+@enduml

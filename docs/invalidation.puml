@@ -1,0 +1,70 @@
+@startuml invalidation
+title Terminal — hover to repaint, one mouse report
+
+skinparam shadowing false
+hide footbox
+
+actor User
+participant "Terminal" as T
+participant "Screen" as S
+participant "Container" as C
+participant "Button" as B
+participant "HoverTracker" as HT
+
+User -> T : moves mouse
+T -> T : readSgrMouse()\nESC [ < 35;12;5 M
+note right of T
+  raw bytes become one
+  EventMouseMoved(12, 5)
+end note
+
+T -> S : onEvent(EventMouseMoved)
+
+group routing — events travel DOWN
+  S -> S : focusables.query({12, 5})
+  S -> S : subscriptions & MouseMoved?
+  S -> C : onEvent(e)
+  C -> C : focusables.query({12, 5})
+  C -> HT : set(button)
+  HT -> B : setHovered(true)
+end
+
+group reaction — the widget changes its own state
+  B -> B : onHoverChanged(true)
+  B -> B : onEnter()
+  note right of B
+    state only, no drawing —
+    render() is the single place
+    that writes to the terminal
+  end note
+end
+
+group invalidation — travels UP
+  B -> C : invalidate(self)
+  C -> S : invalidate(self)
+  S -> S : dirty.insert(button)
+end
+
+note over S
+  Still inside one event. Nothing has
+  been drawn yet: several events in one
+  read burst coalesce into one repaint.
+end note
+
+== input burst drained ==
+
+S -> S : if (dirty.empty()) return
+S -> B : render(term)
+B -> T : underline + "[ + ]"
+S -> S : dirty.clear()
+T -> User : one flush
+
+note over T, S
+  Mode 1003 reports every cell the cursor
+  crosses. Without the dirty set that is a
+  full clear-and-redraw per cell — the flicker.
+  With it, motion inside one widget repaints
+  nothing at all.
+end note
+
+@enduml

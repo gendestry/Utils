@@ -1,0 +1,57 @@
+@startuml layers
+title Terminal — the two directions
+
+skinparam shadowing false
+skinparam linetype ortho
+hide empty members
+
+rectangle "stdin (raw mode)" as IN
+rectangle "stdout" as OUT
+
+package "Input" #F8F8F8 {
+  rectangle "Terminal\nbytes -> Event objects\nreadSgrMouse, isEscapeCharacter" as PARSE
+}
+
+package "Routing" #F8F8F8 {
+  rectangle "Screen\nhit test / focus\ncapability mask\ndirty set" as SCREEN
+  rectangle "Container\nsame rules, one level down" as CONT
+}
+
+package "Widgets" #F8F8F8 {
+  rectangle "Button, Checklist, Label\nstate + render()" as W
+}
+
+package "Output" #F8F8F8 {
+  rectangle "render pass\ndirty widgets only, one flush" as R
+}
+
+IN --> PARSE
+PARSE --> SCREEN : Event&
+SCREEN --> CONT : Event&
+CONT --> W : interface call\n(setHovered, onClicked, ...)
+
+W ..> CONT : invalidate()
+CONT ..> SCREEN : invalidate()
+SCREEN ..> R : dirty set
+R --> OUT
+
+note right of SCREEN
+  **Down: events.** One object, passed by
+  reference, `handled` stopping it. Mouse
+  goes by position, keys by focus.
+end note
+
+note right of W
+  **Up: invalidation.** Not an Event — it
+  carries no input, has no handler, and
+  must not be consumable. A widget says
+  "I changed"; when to repaint is the
+  Screen's decision, not the widget's.
+end note
+
+note bottom of R
+  Coalescing lives here: N invalidations
+  during one input burst produce one pass.
+end note
+
+@enduml
