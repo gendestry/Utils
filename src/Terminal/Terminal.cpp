@@ -1,12 +1,14 @@
-#include "Utils/Terminal/Terminal.h"
+#include "../../include/Utils/Terminal/Terminal.h"
 #include "Utils/Colors/Font.h"
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 using namespace Utils::Terminal;
+using namespace Events;
 
-Terminal::Terminal(std::function<void()> exitCallback) : m_exitCallack(std::move(exitCallback))
+Terminal::Terminal()
 {
     tcgetattr(STDIN_FILENO, &original);
-
     termios raw = original;
 
     // Don't wait for ENTER.
@@ -14,6 +16,11 @@ Terminal::Terminal(std::function<void()> exitCallback) : m_exitCallack(std::move
 
     // Don't echo typed characters.
     raw.c_lflag &= ~(ECHO);
+
+    // Deliver ctrl-c and ctrl-\ as ordinary bytes instead of letting the line discipline
+    // turn them into SIGINT/SIGQUIT -- otherwise Escape::CTRL_C never reaches readInput()
+    // and the process is killed instead.
+    raw.c_lflag &= ~(ISIG);
 
     // Read one character at a time.
     raw.c_cc[VMIN] = 1;
@@ -23,6 +30,17 @@ Terminal::Terminal(std::function<void()> exitCallback) : m_exitCallack(std::move
     term.flush();
 
     tcsetattr(STDIN_FILENO, TCSANOW, &raw);
+
+    term.showCursor();
+}
+
+std::pair<int, int> Terminal::getSize()
+{
+    struct winsize ws{};
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != 0)
+        return {0, 0};
+
+    return {ws.ws_row, ws.ws_col};
 }
 
 std::optional<char> Terminal::readNext()
@@ -121,112 +139,66 @@ std::optional<Terminal::Escape> Terminal::isEscapeCharacter(char in)
     return std::nullopt;
 };
 
-void Terminal::handleEnter(std::string &input)
+std::unique_ptr<Event> Terminal::makeEvent(Escape esc)
 {
-    history.push(input);
-
-    std::cout << '\n';
-    std::cout.flush();
-
-    if (m_onSubmitCallback)
-        m_onSubmitCallback(input);
-
-    cursor.x = 0;
-    input.clear();
-}
-void Terminal::handleBackspace(std::string &input)
-{
-    if (cursor.x > 0)
+    switch (esc)
     {
-        cursor.x--;
-        input.erase(cursor.x, 1);
-        draw(input);
+    case Escape::CTRL_C:
+        return std::make_unique<EventCtrlC>();
+    case Escape::ENTER:
+        return std::make_unique<EventEnter>();
+    case Escape::BACKSPACE:
+        return std::make_unique<EventBackspace>();
+    case Escape::TAB:
+        return std::make_unique<EventTab>();
+    case Escape::ARROW_UP:
+        return std::make_unique<EventArrowUp>();
+    case Escape::ARROW_DOWN:
+        return std::make_unique<EventArrowDown>();
+    case Escape::ARROW_LEFT:
+        return std::make_unique<EventArrowLeft>();
+    case Escape::ARROW_RIGHT:
+        return std::make_unique<EventArrowRight>();
+    default:
+        // No Event class yet for CTRL_C, CTRL_D, CTRL_ARROW_LEFT, CTRL_ARROW_RIGHT.
+        return nullptr;
     }
 }
 
-void Terminal::handleArrowLeft()
+void Terminal::readInput()
 {
-    if (cursor.x > 0)
+    std::string input = "";
+
+    while (reading)
     {
-        cursor.x--;
-        term.moveCursorLeft();
+        auto opt = readNext();
+        if (!opt.has_value())
+        {
+            return;
+        }
+
+        char c = opt.value();
+
+        auto escapeOpt = isEscapeCharacter(c);
+        if (escapeOpt.has_value())
+        {
+            Escape esc = escapeOpt.value();
+            if (auto event = makeEvent(esc))
+            {
+                onEvent(*event);
+            }
+        }
+        else
+        {
+            auto e = std::make_unique<EventChar>(c);
+            onEvent(*e);
+        }
+
         term.flush();
-    }
-}
-void Terminal::handleArrowRight(std::string &input)
-{
-    if (cursor.x < input.size())
-    {
-        cursor.x++;
-        term.moveCursorRight();
-        term.flush();
-        return;
-    }
-
-    // At end of line: → accepts the ghost-text suggestion, fish-style.
-    acceptSuggestion(input);
-}
-
-void Terminal::handleTab(std::string &input) { acceptSuggestion(input); }
-
-std::optional<std::string> Terminal::currentSuggestion(const std::string &input)
-{
-    if (m_suggestCallback)
-    {
-        if (auto match = m_suggestCallback(input); match && match->size() > input.size())
-            return match;
-    }
-
-    if (auto histMatch = history.find(input))
-        return histMatch;
-
-    return std::nullopt;
-}
-
-void Terminal::acceptSuggestion(std::string &input)
-{
-    if (auto suggestion = currentSuggestion(input))
-    {
-        input = *suggestion;
-        cursor.x = input.size();
-        draw(input);
-    }
-}
-void Terminal::handleArrowUp(std::string &input)
-{
-    if (auto val = history.up(input))
-    {
-        input = *val;
-        cursor.x = input.size();
-        draw(input);
-    }
-}
-void Terminal::handleArrowDown(std::string &input)
-{
-    if (auto val = history.down())
-    {
-        input = *val;
-        cursor.x = input.size();
-        draw(input);
     }
 }
 
 void Terminal::draw(const std::string &input)
 {
-    term.carriageReturn();
-    term.clearLine();
-
-    std::string suggestion;
-
-    if (auto match = currentSuggestion(input))
-        suggestion = match->substr(input.size());
-
-    std::cout << input << Font::colorDim << suggestion << Font::colorReset;
-
-    const size_t charsAfterCursor = suggestion.size() + (input.size() - cursor.x);
-
-    if (charsAfterCursor > 0)
-        term.moveCursorLeft(charsAfterCursor);
-
     term.flush();
 }

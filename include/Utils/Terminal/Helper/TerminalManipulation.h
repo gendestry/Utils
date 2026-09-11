@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 
-namespace Utils::Terminal
+namespace Utils::Terminal::Helper
 {
 struct TerminalManipulation
 {

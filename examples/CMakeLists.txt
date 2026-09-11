@@ -25,12 +25,7 @@ add_executable(commands_terminal ${CMAKE_CURRENT_SOURCE_DIR}/commands_terminal/m
 
 target_link_libraries(commands_terminal PRIVATE utils)
 
-add_executable(terminal ${CMAKE_CURRENT_SOURCE_DIR}/terminal/main.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/terminal/Terminal.cpp
-        terminal/KeyEvent.h
-        terminal/Terminal.h
-        terminal/Interfaces.h
-)
+add_executable(terminal ${CMAKE_CURRENT_SOURCE_DIR}/terminal/main.cpp)
 
 #add_executable(terminal ${CMAKE_CURRENT_SOURCE_DIR}/terminal/main.cpp)
 

@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 
+namespace Utils::Terminal::Events
+{
 enum class EventType
 {
     CTRL_C,
@@ -119,3 +121,4 @@ public:
 private:
     Event& m_event;
 };
+}

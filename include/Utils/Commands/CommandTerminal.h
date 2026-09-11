@@ -1,6 +1,6 @@
 #pragma once
+#include "../Terminal/old/Terminal.h"
 #include "Registry.h"
-#include "Utils/Terminal/Terminal.h"
 
 #include <functional>
 #include <optional>
