@@ -140,6 +140,32 @@ std::optional<Terminal::Escape> Terminal::isEscapeCharacter(char in)
     return std::nullopt;
 };
 
+std::unique_ptr<Event> Terminal::makeEvent(Escape esc)
+{
+    switch (esc)
+    {
+    case Escape::CTRL_C:
+        return std::make_unique<EventCtrlC>();
+    case Escape::ENTER:
+        return std::make_unique<EventEnter>();
+    case Escape::BACKSPACE:
+        return std::make_unique<EventBackspace>();
+    case Escape::TAB:
+        return std::make_unique<EventTab>();
+    case Escape::ARROW_UP:
+        return std::make_unique<EventArrowUp>();
+    case Escape::ARROW_DOWN:
+        return std::make_unique<EventArrowDown>();
+    case Escape::ARROW_LEFT:
+        return std::make_unique<EventArrowLeft>();
+    case Escape::ARROW_RIGHT:
+        return std::make_unique<EventArrowRight>();
+    default:
+        // No Event class yet for CTRL_C, CTRL_D, CTRL_ARROW_LEFT, CTRL_ARROW_RIGHT.
+        return nullptr;
+    }
+}
+
 void Terminal::handleEnter(std::string &input)
 {
     // history.push(input);
@@ -153,42 +179,13 @@ void Terminal::handleEnter(std::string &input)
     // cursor.x = 0;
     // input.clear();
 }
-void Terminal::handleBackspace(std::string &input)
-{
-}
-
-void Terminal::handleArrowLeft()
-{
-    term.moveCursorLeft();
-    term.flush();
-}
-void Terminal::handleArrowRight(std::string &input)
-{
-    term.moveCursorRight();
-    term.flush();
-}
-
-// void Terminal::handleTab(std::string &input) { acceptSuggestion(input); }
-
-void Terminal::handleArrowUp(std::string &input)
-{
-    term.moveCursorUp();
-    draw(input);
-}
-void Terminal::handleArrowDown(std::string &input)
-{
-    term.moveCursorDown();
-    draw(input);
-}
 
 void Terminal::readInput()
 {
     std::string input = "";
 
-
-    while (true)
+    while (reading)
     {
-
         auto opt = readNext();
         if (!opt.has_value())
         {
@@ -200,51 +197,19 @@ void Terminal::readInput()
         auto escapeOpt = isEscapeCharacter(c);
         if (escapeOpt.has_value())
         {
-            // escape
             Escape esc = escapeOpt.value();
-            if (esc == Escape::CTRL_C || esc == Escape::CTRL_D)
+            if (auto event = makeEvent(esc))
             {
-                return;
+                onEvent(*event);
             }
-
-            if (esc == Escape::ENTER)
-            {
-                handleEnter(input);
-            }
-
-            if (esc == Escape::BACKSPACE)
-            {
-                handleBackspace(input);
-            }
-
-            if (esc == Escape::ARROW_LEFT)
-            {
-                handleArrowLeft();
-            }
-
-            if (esc == Escape::ARROW_RIGHT)
-            {
-                handleArrowRight(input);
-            }
-
-            if (esc == Escape::ARROW_UP)
-            {
-                handleArrowUp(input);
-            }
-
-            if (esc == Escape::ARROW_DOWN)
-            {
-                handleArrowDown(input);
-            }
-
-            if (esc == Escape::TAB)
-            {
-            }
-
-            continue;
+        }
+        else
+        {
+            auto e = std::make_unique<EventChar>(c);
+            onEvent(*e);
         }
 
-        draw(input);
+        term.flush();
     }
 }
 

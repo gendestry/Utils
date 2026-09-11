@@ -29,6 +29,7 @@ add_executable(terminal ${CMAKE_CURRENT_SOURCE_DIR}/terminal/main.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/terminal/Terminal.cpp
         terminal/KeyEvent.h
         terminal/Terminal.h
+        terminal/Interfaces.h
 )
 
 #add_executable(terminal ${CMAKE_CURRENT_SOURCE_DIR}/terminal/main.cpp)

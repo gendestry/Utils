@@ -1,5 +1,6 @@
 #pragma once
 // #include "History.h"
+#include "Interfaces.h"
 #include "TerminalManipulation.h"
 #include "Utils/Math/Rectangle.h"
 #include "Utils/Storage/Quadtree.h"
@@ -13,10 +14,11 @@
 #include <unistd.h>
 #include <vector>
 
-class Terminal
+class Terminal : public OnEvent
 {
     termios original{};
     TerminalManipulation term;
+    bool reading = true;
 
     enum class Escape
     {
@@ -35,22 +37,18 @@ class Terminal
 
     std::optional<char> readNext();
     std::optional<Escape> isEscapeCharacter(char in);
+    static std::unique_ptr<Event> makeEvent(Escape esc);
 
     void handleEnter(std::string &input);
-    void handleBackspace(std::string &input);
-
-    void handleArrowLeft();
-    void handleArrowRight(std::string &input);
-    void handleArrowUp(std::string &input);
-    void handleArrowDown(std::string &input);
-    void handleTab(std::string &input);
 
   public:
     Terminal();
     ~Terminal() { tcsetattr(STDIN_FILENO, TCSANOW, &original); }
 
     static std::pair<int, int> getSize();
+    TerminalManipulation &manipulate(){return term;}
 
+    void exit() { reading = false; }
     void readInput();
     void draw(const std::string &input);
 }; // namespace Utils::Terminal

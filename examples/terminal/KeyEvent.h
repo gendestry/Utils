@@ -14,6 +14,7 @@ enum class EventType
     ARROW_RIGHT,
     CTRL_ARROW_LEFT,
     CTRL_ARROW_RIGHT,
+    CHAR
 };
 
 #define EVENT_CLASS_TYPE(type) static EventType getStaticType() { return EventType::type; }\
@@ -22,7 +23,7 @@ enum class EventType
 
 struct Mods { bool shift, alt, ctrl, super; };
 
-static Mods decodeMods(int param)   // param from ESC[1;<param><final>
+inline Mods decodeMods(int param)   // param from ESC[1;<param><final>
 {
     int m = (param > 0 ? param - 1 : 0);
     return { bool(m & 1), bool(m & 2), bool(m & 4), bool(m & 8) };
@@ -38,6 +39,12 @@ public:
     virtual EventType getEventType() const = 0;
     virtual const char* getName() const = 0;
     virtual std::string toString() const { return getName(); }
+};
+
+class EventCtrlC : public Event
+{
+public:
+    EVENT_CLASS_TYPE(CTRL_C);
 };
 
 class EventEnter : public Event
@@ -80,6 +87,16 @@ class EventArrowRight : public Event
 {
 public:
     EVENT_CLASS_TYPE(ARROW_RIGHT);
+};
+
+class EventChar : public Event
+{
+    char _c;
+public:
+    EventChar(char c) : _c(c) {}
+    EVENT_CLASS_TYPE(CHAR);
+
+    char get() const { return _c; }
 };
 
 class EventDispatcher
