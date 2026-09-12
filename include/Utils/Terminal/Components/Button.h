@@ -3,6 +3,8 @@
 //
 
 #pragma once
+#include "Utils/Terminal/Events/MouseEvent.h"
+#include "Utils/Terminal/Interfaces/OnHover.h"
 #include "Utils/Terminal/Interfaces/Renderable.h"
 #include <functional>
 #include <iostream>
@@ -10,7 +12,7 @@
 
 namespace Utils::Terminal::Components
 {
-struct Button : public Iface::Renderable
+struct Button : public Iface::Renderable, public Iface::OnHover
 {
     using Renderable::Renderable;
 
@@ -43,6 +45,15 @@ struct Button : public Iface::Renderable
                 onPress();
             return true;
         });
+        // Whoever routed this here already hit-tested it, so there are no bounds to re-check.
+        d.dispatch<EventMousePressed>([&](EventMousePressed& event)
+        {
+            if (!event.isLeft())
+                return false;
+            if (onPress)
+                onPress();
+            return true;
+        });
     }
 
     void render(Helper::TerminalManipulation& term) override
@@ -50,9 +61,13 @@ struct Button : public Iface::Renderable
         term.moveCursorToPosition(uint16_t(top()), uint16_t(left()));
         if (hasFocus)
             term.reverse();
+        else if (isHovered)
+            term.underline();
         std::cout << "[" << text << "]";
         if (hasFocus)
             term.noReverse();
+        else if (isHovered)
+            term.noUnderline();
     }
 };
 }

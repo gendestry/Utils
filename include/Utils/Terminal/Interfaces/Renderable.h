@@ -14,6 +14,8 @@ namespace Utils::Terminal::Iface
 struct Renderable : public Maths::Rectangle, public OnEvent
 {
     using Rectangle::Rectangle;
+    void setWidth(float w) {width = w;}
+    void setHeight(float h) {width = h;}
 
     virtual void render(Helper::TerminalManipulation& term) = 0;
 
