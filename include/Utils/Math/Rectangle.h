@@ -4,11 +4,13 @@
 
 #pragma once
 #include "Point.h"
+#include "Utils/Traits/Stringify.h"
+
 #include <algorithm>
 
 namespace Utils::Maths
 {
-struct Rectangle
+struct Rectangle : public Utils::Traits::Stringify
 {
     Point pos;
     float width = 0.0f;
@@ -84,5 +86,7 @@ struct Rectangle
     }
 
     constexpr bool operator==(const Rectangle &) const = default;
+
+    std::string toString() const override { return std::format("Rectangle TL[{},{}], BR[{},{}]", left(), top(), right(), bottom()); }
 };
 } // namespace Utils::Maths

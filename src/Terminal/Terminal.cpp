@@ -180,8 +180,10 @@ std::unique_ptr<Event> Terminal::readSgrMouse()
     }
 
     const int cb = nums[0];
-    const int x = nums[1];
-    const int y = nums[2];
+    // SGR reports columns and rows 1-based; widget rectangles are 0-based, so normalise here
+    // and every consumer can hit-test against a rect directly.
+    const int x = nums[1] - 1;
+    const int y = nums[2] - 1;
     const Mods mods{bool(cb & 4), bool(cb & 8), bool(cb & 16), false};
 
     if (cb & 64)
