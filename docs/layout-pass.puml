@@ -1,0 +1,101 @@
+@startuml layout-pass
+title Terminal — one layout pass: hbox({ "one" | border, "two" | border | flex, "three" | border | flex })
+
+skinparam shadowing false
+hide footbox
+
+participant "Application" as A
+participant "Quadtree" as QT
+participant "hbox\n(Box)" as H
+participant "border(one)\ngrow = 0" as B1
+participant "border(two)\ngrow = 1" as B2
+participant "border(three)\ngrow = 1" as B3
+
+== trigger ==
+
+note over A
+  relayout() runs on construction, on SIGWINCH,
+  and after any change to a natural size
+  (label.text = ...). **Not** per frame, and
+  **not** per event.
+end note
+
+A -> A : [rows, cols] = Terminal::getSize()
+
+group measure — bottom-up, pure, no side effects
+  A -> H : measure()
+  H -> B1 : measure()
+  B1 --> H : {5, 3}
+  note right of B1
+    "one" is 3 cells; border adds
+    a cell on each side. A bordered
+    node reports padding = 1, because
+    Border::draw paints **outside**
+    the child's rect.
+  end note
+  H -> B2 : measure()
+  B2 --> H : {5, 3}
+  H -> B3 : measure()
+  B3 --> H : {7, 3}
+  H --> A : {17, 3}\n(sum + gap*(n-1))
+end
+
+group arrange — top-down, the only thing allowed to move a widget
+  A -> H : arrange({0, 0, 20, 3})
+  H -> H : avail = 20 - 2*padding - gap*(n-1)
+
+  H -> H : **1. base sizes**\n[5, 5, 7]  used = 17  totalGrow = 2
+  H -> H : **2. distribute slack**\nslack = 20 - 17 = 3\n[5, 5+1.5, 7+1.5]
+  H -> H : **3. snap to whole cells**\n[5, 7, 8]  — remainder carried
+
+  note right of H
+    A terminal has no fractional cells.
+    Snap **once per container**, carrying
+    the accumulated remainder forward, or
+    1fr/1fr/1fr over 20 columns rounds to
+    6+6+6 and leaves a hole.
+  end note
+
+  H -> B1 : arrange({0, 0, 5, 3})
+  H -> B2 : arrange({5, 0, 7, 3})
+  H -> B3 : arrange({12, 0, 8, 3})
+  note right of B3
+    Cross axis: Stretch gives the
+    container's cross size minus padding;
+    otherwise the measured size, offset
+    by Start / Center / End.
+
+    A child that is itself a Box recurses
+    here — one pass, any depth.
+  end note
+end
+
+group reindex — rects just moved
+  A -> QT : clear()
+  A -> QT : insert(each focusable leaf)
+  note right of QT
+    The quadtree's contract is that an object
+    must be removed **before** it moves. A full
+    rebuild after arrange() is the honest way
+    to satisfy it, and it is cheap at terminal
+    sizes. Holds Renderable* — stable, because
+    the tree is retained, not rebuilt per frame.
+  end note
+end
+
+group render — top-down, reads the rect, never writes it
+  A -> H : render(term)
+  H -> B1 : render(term)
+  H -> B2 : render(term)
+  H -> B3 : render(term)
+  A -> A : dirty.clear()
+end
+
+note over A, B3
+  Routing is unchanged and stays flat: rects are
+  absolute, so a click hit-tests against the tree
+  directly. Containers are layout nodes only —
+  they forward no events and own no index.
+end note
+
+@enduml

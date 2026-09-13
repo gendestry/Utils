@@ -10,6 +10,7 @@
 #include "Utils/Terminal/Components/Label.h"
 #include "Utils/Terminal/Events/MouseEvent.h"
 #include "Utils/Terminal/Terminal.h"
+#include "Utils/Terminal/TerminalApplication.h"
 #include "Utils/Terminal/old/NavContainer.h"
 #include "Utils/Terminal/old/Screen.h"
 
@@ -22,82 +23,305 @@
 using namespace Utils::Terminal;
 using namespace Utils::Terminal::Components;
 using namespace Utils::Terminal::Events;
-#if 0
-class Application : public Iface::OnEvent
+
+// 1: the Claude layout layer (include/Utils/Terminal/Claude). 0: the demos below, unchanged.
+#define CLAUDE_LAYOUT_DEMO 0
+
+#if CLAUDE_LAYOUT_DEMO
+#include "Utils/Terminal/Claude/App.h"
+
+int main()
 {
-    Terminal& m_terminal;
-    std::vector<std::unique_ptr<Iface::Renderable>> widgets;
-    Utils::Quadtree<Iface::Renderable> quadtree;
+    namespace ui = Utils::Terminal::Claude;
+    using namespace Utils::Terminal::Claude::Dsl;
 
+    Terminal terminal;
+
+    // Retained tree: grab() keeps pointers into it, and they stay valid while the App holds it.
+    ui::Text* counter = nullptr;
+    ui::Text* status = nullptr;
+    ui::Text* lastEvent = nullptr;
+    int count = 0;
+
+    auto document = vbox({
+        hbox({
+            text("one") | border,
+            text("two") | border | flex,
+            text("three") | border | flex,
+        }),
+
+        hbox({
+            button("-", [&] {
+                counter->set("Count: " + std::to_string(--count));
+                status->set("decremented");
+            }),
+            text("Count: 0") | grab(counter) | flex,
+            button("+", [&] {
+                counter->set("Count: " + std::to_string(++count));
+                status->set("incremented");
+            }),
+        }) | gap(1) | padding(ui::Insets{0, 1, 0, 1}) | border,
+
+        hbox({
+            button("Wide button", [&] { status->set("wide"); }) | flex,
+            filler(),
+            button("Quit", [&] { terminal.exit(); }),
+        }) | borderStyled(ui::Stroke::Double),
+
+        text("-") | grab(status) | padding(ui::Insets{0, 0, 0, 1}),
+        text("-") | grab(lastEvent) | padding(ui::Insets{0, 0, 0, 1}),
+        text("Tab / arrows / mouse, Enter or Space to press, Ctrl-C to quit") | padding(ui::Insets{0, 0, 0, 1}),
+    });
+
+    ui::App app(terminal, std::move(document));
+
+    app.tap([&](Event& e) { lastEvent->set("Event: " + e.toString()); });
+
+    app.setCallback([&](Event& e) {
+        EventDispatcher d(e);
+        d.dispatch<EventCtrlC>([&](EventCtrlC&) {
+            terminal.exit();
+            return true;
+        });
+    });
+
+    terminal.setCallback([&](Event& e) {
+        app.onEvent(e);
+        app.render();
+    });
+
+    app.render();
+    terminal.readInput();
+
+    terminal.manipulate().clearScreenAndMoveHome();
+    terminal.manipulate().showCursor();
+    terminal.manipulate().flush();
+    return 0;
+}
+#elif 1
+
+namespace Temp
+{
+class Container : public Iface::Renderable
+{
 public:
-    Application(Terminal& terminal)
-    : m_terminal(terminal), quadtree({0,0, (float)terminal.getSize().first, (float)terminal.getSize().second})
+    explicit Container(const Rectangle& bounds)
+        : Renderable(bounds.pos, bounds.width, bounds.height), focusables(bounds)
     {
-
     }
 
+    Container(float x, float y, float width, float height)
+        : Container(Rectangle{x, y, width, height})
+    {
+    }
+
+    std::vector<std::unique_ptr<Iface::Renderable>> children;
+    Utils::Quadtree<Iface::Renderable> focusables;
+    Iface::Renderable* focusedChild = nullptr;
+    Iface::HoverTracker hoveredChild;
+
+    // `args` are the child's constructor arguments, with its position relative to the container.
     template<typename T, typename... Args>
     T& add(Args&&... args)
     {
-        auto widget = std::make_unique<T>(std::forward<Args>(args)...);
-        T& ref = *widget;
-        widgets.push_back(std::move(widget));
+        auto child = std::make_unique<T>(std::forward<Args>(args)...);
+        T& ref = *child;
+        static_cast<Rectangle&>(ref) = ref.translated(pos);
+        children.push_back(std::move(child));
 
         if (ref.focusable())
         {
-            // focusables.insert(&ref);
-            // if (!focused)
-            //     focus(&ref);
+            focusables.insert(&ref);
+            if (!focusedChild)
+                focusedChild = &ref;
         }
 
         return ref;
     }
 
-    void onEvent(Events::Event & e) override
-    {
-        std::cout << e.toString() << std::endl;
-        Iface::OnEvent::onEvent(e);   // let the callback see it
-    }
-
-    void render(Helper::TerminalManipulation& term)
-    {
-        term.hideCursor();
-        term.clearScreenAndMoveHome();
-
-        for (auto& widget : widgets)
-        {
-            widget->render(term);
-            if (widget->border)
-                widget->border->draw(term, *widget);
-        }
-
-        // if (focused && focused->placeCursor(term))
-        //     term.showCursor();
-    }
+    void render(Helper::TerminalManipulation& term) override
+    {}
 };
+}
+
+// class Application : public Iface::OnEvent
+// {
+//     Terminal& m_terminal;
+//     std::vector<std::unique_ptr<Iface::Renderable>> widgets;
+//     Utils::Quadtree<Iface::Renderable> quadtree;
+//     Iface::Renderable* focused = nullptr;
+//
+//
+//     void focus(Iface::Renderable* widget)
+//     {
+//         if (focused)
+//             focused->hasFocus = false;
+//         focused = widget;
+//         if (focused)
+//             focused->hasFocus = true;
+//     }
+//
+//     bool focusTowards(std::optional<Iface::Renderable*> next)
+//     {
+//         if (!next)
+//             return false;
+//         focus(*next);
+//         return true;
+//     }
+//
+//     void focusNext()
+//     {
+//         if (widgets.empty())
+//             return;
+//
+//         size_t start = 0;
+//         for (size_t i = 0; i < widgets.size(); ++i)
+//             if (widgets[i].get() == focused)
+//                 start = i + 1;
+//
+//         for (size_t n = 0; n < widgets.size(); ++n)
+//         {
+//             Iface::Renderable* candidate = widgets[(start + n) % widgets.size()].get();
+//             if (candidate->focusable())
+//             {
+//                 focus(candidate);
+//                 return;
+//             }
+//         }
+//     }
+//
+// public:
+//     Application(Terminal& terminal)
+//     // getSize() is {rows, cols}: columns are the width, rows the height.
+//     : m_terminal(terminal), quadtree({0,0, (float)terminal.getSize().second, (float)terminal.getSize().first})
+//     {
+//
+//     }
+//
+//     Utils::Quadtree<Iface::Renderable>& quad()
+//     {
+//         return quadtree;
+//     }
+//     template<typename T, typename... Args>
+//     T& add(Args&&... args)
+//     {
+//         auto widget = std::make_unique<T>(std::forward<Args>(args)...);
+//         T& ref = *widget;
+//         widgets.push_back(std::move(widget));
+//
+//         if (ref.focusable())
+//         {
+//             quadtree.insert(&ref);
+//             if (!focused)
+//                 focus(&ref);
+//         }
+//
+//         return ref;
+//     }
+//
+//     void onEvent(Events::Event & e) override
+//     {
+//         // Mouse events go by position, not focus: whatever sits under the cursor gets them,
+//         // and a press moves focus there. Only focusables are in the quadtree, so a click on
+//         // a plain Label falls through to the Screen's own callback.
+//         if (e.IsInCategory(Events::EventCategoryMouse))
+//         {
+//             auto& me = static_cast<Events::MouseEvent &>(e);
+//             auto under = quadtree.query(Utils::Maths::Point{float(me.x()), float(me.y())});
+//             Iface::Renderable* target = under.empty() ? nullptr : under.back();
+//
+//             // Also with no target, so leaving the last widget clears its highlight.
+//             // hovered.set(target);
+//
+//             if (target)
+//             {
+//                 // if (e.getEventType() == Events::EventType::MOUSE_PRESSED)
+//                     focus(target);
+//                 target->onEvent(e);
+//             }
+//
+//             if (!e.handled)
+//                 OnEvent::onEvent(e);
+//             return;
+//         }
+//
+//         if (focused)
+//             focused->onEvent(e);
+//
+//         if (!e.handled)
+//         {
+//             EventDispatcher d(e);
+//
+//             // d.dispatch<EventTab>([&](EventTab&)
+//             // {
+//             //     focusNext();
+//             //     return true;
+//             // });
+//             d.dispatch<Events::EventArrowLeft>([&](Events::EventArrowLeft &) { return focusTowards(quadtree.left(focused)); });
+//             d.dispatch<Events::EventArrowRight>([&](Events::EventArrowRight &) { return focusTowards(quadtree.right(focused)); });
+//             d.dispatch<Events::EventArrowUp>([&](Events::EventArrowUp &) { return focusTowards(quadtree.up(focused)); });
+//             d.dispatch<Events::EventArrowDown>([&](Events::EventArrowDown &) { return focusTowards(quadtree.down(focused)); });
+//         }
+//
+//         if (!e.handled)
+//             OnEvent::onEvent(e);
+//     }
+//
+//     void render(Helper::TerminalManipulation& term)
+//     {
+//         term.hideCursor();
+//         term.clearScreenAndMoveHome();
+//
+//         for (auto& widget : widgets)
+//         {
+//             widget->render(term);
+//             if (widget->border)
+//                 widget->border->draw(term, *widget);
+//         }
+//
+//         if (focused && focused->placeCursor(term))
+//             term.showCursor();
+//     }
+// };
 
 int main()
 {
     Terminal terminal;
     Application app(terminal);
-    auto& label = app.add<Label>(0,0,10,0);
+    auto [rows, cols] = Terminal::getSize();
+    // auto& c = app.add<Temp::Container>(2,2,cols-2, rows-2);
+    // c.border = Helper::Border{};
+    auto& label = app.add<Label>(0,2,10,0);
     label.text = "Label: 0";
+    // //
+    // auto& counterRow = app.add<NavContainer>(2, 5, 22, 1);
+    // counterRow.border = Helper::Border{};
+    auto& decrement = app.add<Button>(0, 0, "-");
+    auto& counter = app.add<Label>(6, 0, 10, 1);
+    auto& increment = app.add<Button>(17, 0, "+");
+    // //
+    int count = 0;
+    counter.text = "Count: 0";
+    decrement.onPress = [&] { counter.text = "Count: " + std::to_string(--count); };
+    increment.onPress = [&] { counter.text = "Count: " + std::to_string(++count); };
+
 
     terminal.setCallback([&](Events::Event & e)
     {
         app.onEvent(e);
+        // label.text = e.toString();
         app.render(terminal.manipulate());
     });
 
     app.setCallback([&](Event& e)
-   {
-       EventDispatcher d(e);
-       d.dispatch<EventCtrlC>([&](EventCtrlC&)
-       {
+    {
+        EventDispatcher d(e);
+        d.dispatch<EventCtrlC>([&](EventCtrlC&)
+        {
            terminal.exit();
            return true;
-       });
-   });
+        });
+    });
 
     app.render(terminal.manipulate());
     terminal.manipulate().flush();

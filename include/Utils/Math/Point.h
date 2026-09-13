@@ -34,4 +34,6 @@ struct Point
 
     constexpr bool operator==(const Point &) const = default;
 };
+
+using Size = Point;
 }

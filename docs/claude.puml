@@ -1,0 +1,239 @@
+@startuml claude
+title Terminal::Claude — the implemented layout layer
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 50
+hide empty members
+
+package "existing, reused unchanged" #EFEFEF {
+  class "Maths::Rectangle" as Rectangle {
+    +pos : Point
+    +width, height : float
+    +contains(Point) : bool
+  }
+  interface "Iface::OnEvent" as OnEvent {
+    +callback : Callback
+    +onEvent(Event&) <<virtual>>
+  }
+  class "Quadtree<T>" as Quadtree {
+    +insert(T*)
+    +left/right/up/down(T*) : optional<T*>
+  }
+  class Terminal {
+    +getSize() : {rows, cols}
+    +manipulate() : TerminalManipulation&
+    +exit()
+  }
+}
+
+package "Claude/Layout.h" #F8F8F8 {
+  class LayoutSpec <<value>> {
+    +width : optional<float>
+    +height : optional<float>
+    +grow : float = 0
+    +shrink : float = 1
+    +minSize : Size
+  }
+  class Insets <<value>> {
+    +top, right, bottom, left : float
+    +all(n) : Insets
+    +deflate(Rectangle) : Rectangle
+  }
+  enum Axis {
+    Horizontal
+    Vertical
+  }
+  enum Align {
+    Start
+    Center
+    End
+    Stretch
+  }
+}
+
+package "Claude/Node.h" #F8F8F8 {
+  abstract class Node {
+    +layout : LayoutSpec
+    +parent : Node*
+    +hasFocus, isHovered : bool
+    +layoutDirty : bool
+    --
+    +measure() : Size <<virtual>>
+    +minimum() : Size <<virtual>>
+    +desired() : Size
+    +arrange(Rectangle) <<virtual>>
+    +render(term) <<virtual>>
+    +forEachChild(fn) <<virtual>>
+    --
+    +focusable() : bool <<virtual>>
+    +hittable() : bool <<virtual>>
+    +markLayoutDirty()
+    {static} +moveTo(term, col, row)
+  }
+  note right of Node
+    The node **is** its rectangle, in
+    absolute **0-based** cells — the space
+    Terminal reports mouse positions in.
+    moveTo() is the only +1 to the
+    terminal's 1-based cursor.
+
+    desired() = measure() with any fixed
+    width/height from the spec applied.
+    markLayoutDirty() walks up to the root.
+  end note
+}
+
+package "Claude/Frame.h, Box.h, Widgets.h" #F8F8F8 {
+  class Frame {
+    +child : unique_ptr<Node>
+    +insets : Insets
+    +stroke : optional<Stroke>
+    --
+    +measure() = child + insets
+    +minimum() >= insets
+    +arrange(r) → child(insets.deflate(r))
+    +render() → stroke on own rect, then child
+  }
+  note bottom of Frame
+    border  = insets 1 + stroke
+    padding = insets n, no stroke
+    Whatever measure() adds,
+    arrange() takes away.
+  end note
+
+  class Box {
+    +axis : Axis
+    +align : Align = Stretch
+    +gap : float
+    +children : vector<unique_ptr<Node>>
+    --
+    +add(unique_ptr<Node>) : Node&
+    +measure() : Σ main + gaps, max cross
+    +arrange(r)
+    --
+    -baseSizes()
+    -distribute(sizes, avail)
+    -snapToCells(sizes)
+    -cellRect(r, offset, main, child)
+  }
+  note bottom of Box
+    1. base  = child.desired()
+    2. slack > 0 → split by **grow**
+       slack < 0 → take back by
+       shrink × size, floor at minimum()
+    3. round the running total, so the
+       remainder carries (20/3 → 7,6,7)
+    4. place; cross axis by align
+    Fixed width/height opts out of 2.
+  end note
+
+  class Text {
+    -m_text : string
+    +set(string)
+    +measure() : {len, 1}
+  }
+  class Button {
+    +label : string
+    +onPress : function
+    +focusable() = true
+    +measure() : {len+2, 1}
+    +onEvent() : Enter, Space, left press
+  }
+  class Filler {
+    layout.grow = 1
+  }
+  enum Stroke {
+    Single
+    Rounded
+    Double
+    Heavy
+  }
+}
+
+package "Claude/Dsl.h" #F8F8F8 {
+  class Element {
+    -m_node : mutable unique_ptr<Node>
+    +copy = move the node
+    +release() : unique_ptr<Node>
+  }
+  note bottom of Element
+    Copy-moves so hbox({ a, b })
+    can take nodes out of a
+    std::initializer_list.
+  end note
+
+  class "Dsl (free functions)" as Dsl <<namespace>> {
+    +text, button, filler
+    +hbox({...}), vbox({...})
+    ..wrappers — insert a Frame..
+    +border, borderStyled(Stroke)
+    +padding(n | Insets)
+    ..modifiers — change the node..
+    +flex, grow(w), width(w), height(h)
+    +gap(g), align(a)    // Box only
+    +grab(T*&)           // keep a pointer
+    ..
+    +operator|(Element, Decorator)
+  }
+}
+
+package "Claude/App.h" #F8F8F8 {
+  class App {
+    -m_root : unique_ptr<Node>
+    -m_nav : unique_ptr<Quadtree<Node>>
+    -m_focused, m_hovered : Node*
+    -m_taps : vector<Callback>
+    --
+    +App(Terminal&, Element root)
+    +tap(Callback)
+    +relayout()
+    +onEvent(Event&)
+    +render()
+    +hitTest(Point) : Node*
+  }
+  note right of App
+    **onEvent** order
+    taps → every event, handle nothing
+    mouse → hitTest (tree walk, deepest
+      hittable wins), hover, focus on
+      press, deliver
+    keys → focused node
+    nav → Tab = tree order,
+      arrows = m_nav quadtree
+    fallback → own callback
+
+    **render** relayouts only if the root
+    is dirty or the terminal resized.
+    **relayout** arranges {0,0,cols,rows},
+    rebuilds m_nav from focusables.
+  end note
+}
+
+Rectangle <|-- Node
+OnEvent <|-- Node
+OnEvent <|-- App
+Node *-- LayoutSpec
+
+Node <|-- Frame
+Node <|-- Box
+Node <|-- Text
+Node <|-- Button
+Node <|-- Filler
+
+Frame *--> "0..1" Node : child
+Frame --> Insets
+Frame --> Stroke
+Box *--> "0..*" Node : children
+Box --> Axis
+Box --> Align
+
+Element o--> "0..1" Node
+Dsl ..> Element : builds
+
+App *--> "root" Node
+App *--> "m_nav" Quadtree
+App --> Terminal
+
+@enduml
