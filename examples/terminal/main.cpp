@@ -151,18 +151,19 @@ int main()
     auto [rows, cols] = Terminal::getSize();
     // auto& c = app.add<Temp::Container>(2,2,cols-2, rows-2);
     // c.border = Helper::Border{};
-    auto& label = app.add<Label>(0,2,20,0);
+    auto& label = app.add<Label>(0,2);
     label.text = "Label: 0";
     // // auto& counterRow = app.add<NavContainer>(2, 5, 22, 1);
     // // counterRow.border = Helper::Border{};
-    // auto& decrement = app.add<Button>(0, 0, "-");
-    // auto& counter = app.add<Label>(6, 0, 10, 1);
-    // auto& increment = app.add<Button>(17, 0, "+");
+    auto& decrement = app.add<Button>(0, 0, "-");
+    auto& counter = app.add<Label>(6, 0);
+    auto& increment = app.add<Button>(17, 0, "+");
     // // //
-    // int count = 0;
-    // counter.text = "Count: 0";
-    // decrement.onPress = [&] { counter.text = "Count: " + std::to_string(--count); };
-    // increment.onPress = [&] { counter.text = "Count: " + std::to_string(++count); };
+    int count = 0;
+    counter.text = "Count: 0";
+    decrement.onPress = [&] { counter.text = "Count: " + std::to_string(--count); };
+    increment.onPress = [&] { counter.text = "Count: " + std::to_string(++count); };
+    auto& todo = app.add<Checklist>(2, 8, std::vector<std::string>{"Milk", "Eggs", "Bread"});
 
 
     terminal.setCallback([&](Events::Event & e)

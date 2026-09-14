@@ -17,6 +17,7 @@ struct Rectangle : public Utils::Traits::Stringify
     float height = 0.0f;
 
     constexpr Rectangle() = default;
+    constexpr Rectangle(float x, float y) : pos{x, y} {}
     constexpr Rectangle(Point pos, float width, float height) : pos(pos), width(width), height(height) {}
     constexpr Rectangle(float x, float y, float width, float height) : pos(x, y), width(width), height(height) {}
 

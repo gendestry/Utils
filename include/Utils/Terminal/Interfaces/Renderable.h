@@ -15,6 +15,7 @@ struct Renderable : public Maths::Rectangle, public OnEvent
 {
     using Rectangle::Rectangle;
 
+    virtual Maths::Size measure() const { return{0.f,0.f};};
     virtual void render(Helper::TerminalManipulation& term) = 0;
 
     // Maintained by the Screen, so widgets can draw themselves highlighted.

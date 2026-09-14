@@ -45,6 +45,15 @@ struct Checklist : public Iface::Renderable, public Iface::OnHover
     std::function<void(size_t index, const Item& item)> onChange;
 
     bool focusable() const override { return true; }
+    Maths::Size measure() const override
+    {
+        std::size_t max = 0;
+        for (const auto& i : items)
+        {
+            max = std::max(max, i.text.size() + 4);
+        }
+        return{static_cast<float>(max),static_cast<float>(items.size())};
+    };
 
     void onEvent(Events::Event& e) override
     {

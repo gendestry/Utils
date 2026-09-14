@@ -15,15 +15,17 @@ namespace Utils::Terminal::Components
 struct Button : public Iface::Renderable, public Iface::OnHover
 {
     using Renderable::Renderable;
+    std::string text;
 
     // Sized to fit "[ text ]" on a single row.
-    Button(float x, float y, std::string label)
+    Button(float x, float y, std::string label = "")
         : Renderable(x, y, float(label.size() + 2), 1), text(std::move(label))
     {
     }
 
-    std::string text;
     std::function<void()> onPress;
+
+    Maths::Size measure() const override { return{static_cast<float>(text.size() + 2),1.f};};
 
     bool focusable() const override { return true; }
 
