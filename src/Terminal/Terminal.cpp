@@ -1,8 +1,10 @@
 #include "../../include/Utils/Terminal/Terminal.h"
 #include "Utils/Colors/Font.h"
 #include "Utils/Terminal/Events/MouseEvent.h"
+#include <poll.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <vector>
 
 using namespace Utils::Terminal;
 using namespace Events;
@@ -19,7 +21,7 @@ Terminal::Terminal()
     raw.c_lflag &= ~(ECHO);
 
     // Deliver ctrl-c and ctrl-\ as ordinary bytes instead of letting the line discipline
-    // turn them into SIGINT/SIGQUIT -- otherwise Escape::CTRL_C never reaches readInput()
+    // turn them into SIGINT/SIGQUIT -- otherwise EventCtrlC never reaches readInput()
     // and the process is killed instead.
     raw.c_lflag &= ~(ISIG);
 
@@ -56,101 +58,210 @@ std::optional<char> Terminal::readNext()
     return c;
 };
 
-std::optional<Terminal::Escape> Terminal::isEscapeCharacter(char in)
+bool Terminal::inputPending(int timeoutMs)
 {
-    char c = in;
-    if (c == 3)
-    {
-        // std::cout << "\r\033[2K\n";
-        return Escape::CTRL_C;
-    }
+    pollfd pfd{STDIN_FILENO, POLLIN, 0};
+    return poll(&pfd, 1, timeoutMs) > 0;
+}
 
-    if (c == 4)
-    {
-        return Escape::CTRL_D;
-    }
+namespace
+{
+constexpr uint8_t SHIFT = static_cast<uint8_t>(Mod::Shift);
+constexpr uint8_t ALT = static_cast<uint8_t>(Mod::Alt);
+constexpr uint8_t CTRL = static_cast<uint8_t>(Mod::Ctrl);
+
+// Builds a navigation/function key event. Arrows keep their dedicated classes so existing
+// handlers still see them; everything else becomes an EventKey.
+std::unique_ptr<Event> makeNavKey(Key key, Mods mods)
+{
+    return std::make_unique<EventKey>(key, 0, mods);
+}
+} // namespace
+
+std::unique_ptr<Event> Terminal::readKey(char c, uint8_t extra)
+{
+    if (c == 3 && extra == 0)
+        return std::make_unique<EventCtrlC>();
 
     if (c == '\n' || c == '\r')
-    {
-        return Escape::ENTER;
-    }
+        return std::make_unique<EventEnter>(Mods{extra});
 
     if (c == 127 || c == 8)
-    {
-        return Escape::BACKSPACE;
-    }
+        return std::make_unique<EventBackspace>(Mods{extra});
 
     if (c == '\t')
-    {
-        return Escape::TAB;
-    }
+        return std::make_unique<EventTab>(Mods{extra});
 
     if (c == '\033')
     {
-        auto c1 = readNext();
-        if (!c1.has_value() || c1.value() != '[')
-        {
-            return std::nullopt;
-        }
+        // A lone ESC and the start of a sequence both begin with this byte; sequences arrive in
+        // one burst, so if nothing follows quickly it was the Escape key itself.
+        if (!inputPending(25))
+            return std::make_unique<EventKey>(Key::Escape, 0, Mods{extra});
 
-        auto c2 = readNext();
-        if (c2.has_value())
-        {
-            char val = c2.value();
+        auto next = readNext();
+        if (!next)
+            return nullptr;
 
-            // SGR mouse report: ESC [ < Cb ; Cx ; Cy M|m
-            if (val == '<')
-            {
-                pendingMouse = readSgrMouse();
-                if (!pendingMouse)
-                    return std::nullopt;
-                return Escape::MOUSE;
-            }
+        if (*next == '[')
+            return readCsi(extra);
+        if (*next == 'O')
+            return readSs3(extra);
 
-            switch (val)
-            {
-            case 'A':
-            {
-                return Escape::ARROW_UP;
-            }
-            case 'B':
-            {
-                return Escape::ARROW_DOWN;
-            }
-            case 'C':
-            {
-                return Escape::ARROW_RIGHT;
-            }
-            case 'D':
-            {
-                return Escape::ARROW_LEFT;
-            }
-            }
-
-            // Ctrl + Arrow: ESC [ 1 ; 5 C/D
-            if (c2.value() == '1')
-            {
-                auto semi = readNext();
-                auto modifier = readNext();
-                auto direction = readNext();
-
-                if (!semi || !modifier || !direction)
-                    return std::nullopt;
-
-                if (*semi == ';' && *modifier == '5')
-                {
-                    if (*direction == 'C')
-                        return Escape::CTRL_ARROW_RIGHT;
-
-                    if (*direction == 'D')
-                        return Escape::CTRL_ARROW_LEFT;
-                }
-            }
-        }
+        // ESC followed by a key is how terminals send Alt+key.
+        return readKey(*next, extra | ALT);
     }
 
-    return std::nullopt;
-};
+    // Ctrl+letter arrives as 1..26 (Tab, Enter and Backspace were handled above).
+    if (c >= 1 && c <= 26)
+        return std::make_unique<EventKey>(Key::Char, char32_t('a' + c - 1), Mods{uint8_t(extra | CTRL)});
+
+    uint8_t mods = extra;
+    if (c >= 'A' && c <= 'Z')
+        mods |= SHIFT;
+
+    // With Ctrl/Alt held it's a shortcut, not text -- keep it away from EventChar consumers.
+    if (mods & (ALT | CTRL))
+        return std::make_unique<EventKey>(Key::Char, char32_t(static_cast<unsigned char>(c)), Mods{mods});
+
+    return std::make_unique<EventChar>(c, Mods{mods});
+}
+
+// Called with "ESC [" already consumed. Reads "params final" where params are ';'-separated
+// numbers (':' sub-params are skipped) and the final byte is in 0x40..0x7E.
+std::unique_ptr<Event> Terminal::readCsi(uint8_t extra)
+{
+    std::vector<int> params{0};
+    bool skippingSub = false;
+    char final = 0;
+
+    while (true)
+    {
+        auto c = readNext();
+        if (!c)
+            return nullptr;
+
+        if (*c == '<' && params.size() == 1 && params[0] == 0)
+            return readSgrMouse();
+
+        if (*c >= '0' && *c <= '9')
+        {
+            if (!skippingSub)
+                params.back() = params.back() * 10 + (*c - '0');
+        }
+        else if (*c == ';')
+        {
+            params.push_back(0);
+            skippingSub = false;
+        }
+        else if (*c == ':')
+            skippingSub = true;
+        else if (*c >= 0x40 && *c <= 0x7E)
+        {
+            final = *c;
+            break;
+        }
+        // Private markers ('?', '>', '=') and intermediates are ignored.
+    }
+
+    const Mods mods{uint8_t(Mods::decodeMods(params.size() > 1 ? params[1] : 1).bits | extra)};
+
+    switch (final)
+    {
+    case 'A':
+        return std::make_unique<EventArrowUp>(mods);
+    case 'B':
+        return std::make_unique<EventArrowDown>(mods);
+    case 'C':
+        return std::make_unique<EventArrowRight>(mods);
+    case 'D':
+        return std::make_unique<EventArrowLeft>(mods);
+    case 'H':
+        return makeNavKey(Key::Home, mods);
+    case 'F':
+        return makeNavKey(Key::End, mods);
+    case 'P':
+        return makeNavKey(Key::F1, mods);
+    case 'Q':
+        return makeNavKey(Key::F2, mods);
+    case 'R':
+        return makeNavKey(Key::F3, mods);
+    case 'S':
+        return makeNavKey(Key::F4, mods);
+    case 'Z': // Shift+Tab
+        return std::make_unique<EventTab>(Mods{uint8_t(mods.bits | SHIFT)});
+
+    case '~':
+        switch (params[0])
+        {
+        case 1: case 7: return makeNavKey(Key::Home, mods);
+        case 2: return makeNavKey(Key::Insert, mods);
+        case 3: return makeNavKey(Key::Delete, mods);
+        case 4: case 8: return makeNavKey(Key::End, mods);
+        case 5: return makeNavKey(Key::PageUp, mods);
+        case 6: return makeNavKey(Key::PageDown, mods);
+        case 11: return makeNavKey(Key::F1, mods);
+        case 12: return makeNavKey(Key::F2, mods);
+        case 13: return makeNavKey(Key::F3, mods);
+        case 14: return makeNavKey(Key::F4, mods);
+        case 15: return makeNavKey(Key::F5, mods);
+        case 17: return makeNavKey(Key::F6, mods);
+        case 18: return makeNavKey(Key::F7, mods);
+        case 19: return makeNavKey(Key::F8, mods);
+        case 20: return makeNavKey(Key::F9, mods);
+        case 21: return makeNavKey(Key::F10, mods);
+        case 23: return makeNavKey(Key::F11, mods);
+        case 24: return makeNavKey(Key::F12, mods);
+        }
+        return nullptr;
+
+    case 'u': // kitty keyboard protocol / xterm modifyOtherKeys: ESC [ code ; mods u
+    {
+        const char32_t code = params[0];
+        switch (code)
+        {
+        case 13: return std::make_unique<EventEnter>(mods);
+        case 9: return std::make_unique<EventTab>(mods);
+        case 127: return std::make_unique<EventBackspace>(mods);
+        case 27: return makeNavKey(Key::Escape, mods);
+        }
+
+        if (code == 'c' && mods == Mod::Ctrl)
+            return std::make_unique<EventCtrlC>();
+
+        if (!(mods.bits & (ALT | CTRL | static_cast<uint8_t>(Mod::Super))) && code >= 32 && code < 127)
+            return std::make_unique<EventChar>(char(code), mods);
+
+        return std::make_unique<EventKey>(Key::Char, code, mods);
+    }
+    }
+
+    return nullptr; // Unknown sequence (focus reports etc.) -- drop it rather than leak it as text.
+}
+
+// Called with "ESC O" consumed: application-mode arrows/Home/End and F1-F4.
+std::unique_ptr<Event> Terminal::readSs3(uint8_t extra)
+{
+    auto c = readNext();
+    if (!c)
+        return nullptr;
+
+    const Mods mods{extra};
+    switch (*c)
+    {
+    case 'A': return std::make_unique<EventArrowUp>(mods);
+    case 'B': return std::make_unique<EventArrowDown>(mods);
+    case 'C': return std::make_unique<EventArrowRight>(mods);
+    case 'D': return std::make_unique<EventArrowLeft>(mods);
+    case 'H': return makeNavKey(Key::Home, mods);
+    case 'F': return makeNavKey(Key::End, mods);
+    case 'P': return makeNavKey(Key::F1, mods);
+    case 'Q': return makeNavKey(Key::F2, mods);
+    case 'R': return makeNavKey(Key::F3, mods);
+    case 'S': return makeNavKey(Key::F4, mods);
+    }
+    return nullptr;
+}
 
 // Called with "ESC [ <" already consumed. Cb is a bitfield: low two bits pick the button
 // (3 = none), bit 2/3/4 are shift/alt/ctrl, bit 5 marks motion and bit 6 the scroll wheel.
@@ -184,7 +295,7 @@ std::unique_ptr<Event> Terminal::readSgrMouse()
     // and every consumer can hit-test against a rect directly.
     const int x = nums[1] - 1;
     const int y = nums[2] - 1;
-    const Mods mods{bool(cb & 4), bool(cb & 8), bool(cb & 16), false};
+    const Mods mods{static_cast<uint8_t>((cb >> 2) & 7)}; // shift/alt/ctrl, same order as Mod
 
     if (cb & 64)
         return std::make_unique<EventMouseScrolled>(x, y, mods, (cb & 1) ? -1 : 1);
@@ -204,38 +315,8 @@ std::unique_ptr<Event> Terminal::readSgrMouse()
     return std::make_unique<EventMousePressed>(button, x, y, mods);
 }
 
-std::unique_ptr<Event> Terminal::makeEvent(Escape esc)
-{
-    switch (esc)
-    {
-    case Escape::MOUSE:
-        return std::move(pendingMouse);
-    case Escape::CTRL_C:
-        return std::make_unique<EventCtrlC>();
-    case Escape::ENTER:
-        return std::make_unique<EventEnter>();
-    case Escape::BACKSPACE:
-        return std::make_unique<EventBackspace>();
-    case Escape::TAB:
-        return std::make_unique<EventTab>();
-    case Escape::ARROW_UP:
-        return std::make_unique<EventArrowUp>();
-    case Escape::ARROW_DOWN:
-        return std::make_unique<EventArrowDown>();
-    case Escape::ARROW_LEFT:
-        return std::make_unique<EventArrowLeft>();
-    case Escape::ARROW_RIGHT:
-        return std::make_unique<EventArrowRight>();
-    default:
-        // No Event class yet for CTRL_C, CTRL_D, CTRL_ARROW_LEFT, CTRL_ARROW_RIGHT.
-        return nullptr;
-    }
-}
-
 void Terminal::readInput()
 {
-    std::string input = "";
-
     while (reading)
     {
         auto opt = readNext();
@@ -244,21 +325,9 @@ void Terminal::readInput()
             return;
         }
 
-        char c = opt.value();
-
-        auto escapeOpt = isEscapeCharacter(c);
-        if (escapeOpt.has_value())
+        if (auto event = readKey(*opt))
         {
-            Escape esc = escapeOpt.value();
-            if (auto event = makeEvent(esc))
-            {
-                onEvent(*event);
-            }
-        }
-        else
-        {
-            auto e = std::make_unique<EventChar>(c);
-            onEvent(*e);
+            onEvent(*event);
         }
 
         term.flush();

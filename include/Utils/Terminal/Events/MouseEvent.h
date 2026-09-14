@@ -42,8 +42,21 @@ public:
     int x() const { return _x; }
     int y() const { return _y; }
     const Mods& mods() const { return _mods; }
+    bool shift() const { return _mods.shift(); }
+    bool alt() const { return _mods.alt(); }
+    bool ctrl() const { return _mods.ctrl(); }
 
     EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput);
+
+protected:
+    // " (x, y)" plus " ctrl+alt" when modifiers are held; shared by the toString()s below.
+    std::string posAndMods() const
+    {
+        std::string s = " (" + std::to_string(_x) + ", " + std::to_string(_y) + ")";
+        if (_mods.bits)
+            s += " " + _mods.toString();
+        return s;
+    }
 };
 
 // Carries a button so a handler can tell left from right; the dispatcher only matches on the
@@ -64,6 +77,9 @@ public:
     bool isMiddle() const { return _button == MouseButton::Middle; }
     bool isRight() const { return _button == MouseButton::Right; }
 
+    // Exact modifier match: e.is(Mod::Ctrl, MouseButton::Left) is false for Ctrl+Shift+click.
+    bool is(Mod m, MouseButton b) const { return _button == b && _mods == m; }
+
     EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryMouseButton | EventCategoryInput);
 };
 
@@ -75,8 +91,7 @@ public:
 
     std::string toString() const override
     {
-        return std::string(getName()) + " " + Events::toString(_button) + " (" + std::to_string(_x) +
-               ", " + std::to_string(_y) + ")";
+        return std::string(getName()) + " " + Events::toString(_button) + posAndMods();
     }
 };
 
@@ -88,8 +103,7 @@ public:
 
     std::string toString() const override
     {
-        return std::string(getName()) + " " + Events::toString(_button) + " (" + std::to_string(_x) +
-               ", " + std::to_string(_y) + ")";
+        return std::string(getName()) + " " + Events::toString(_button) + posAndMods();
     }
 };
 
@@ -102,7 +116,7 @@ public:
 
     std::string toString() const override
     {
-        return std::string(getName()) + " (" + std::to_string(_x) + ", " + std::to_string(_y) + ")";
+        return std::string(getName()) + posAndMods();
     }
 };
 
@@ -117,8 +131,7 @@ public:
 
     std::string toString() const override
     {
-        return std::string(getName()) + " " + Events::toString(_button) + " (" + std::to_string(_x) +
-               ", " + std::to_string(_y) + ")";
+        return std::string(getName()) + " " + Events::toString(_button) + posAndMods();
     }
 };
 
@@ -141,8 +154,7 @@ public:
 
     std::string toString() const override
     {
-        return std::string(getName()) + " " + std::to_string(_delta) + " (" + std::to_string(_x) +
-               ", " + std::to_string(_y) + ")";
+        return std::string(getName()) + " " + std::to_string(_delta) + posAndMods();
     }
 };
 }
