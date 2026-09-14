@@ -7,6 +7,34 @@ project(test VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/lulcek/main.cpp)
+add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/lulcek/main.cpp
+        curves/main.cpp
+        terminal/main.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE utils)
+
+add_executable(regex_groups ${CMAKE_CURRENT_SOURCE_DIR}/regex_groups/main.cpp)
+
+target_link_libraries(regex_groups PRIVATE utils)
+
+add_executable(commands ${CMAKE_CURRENT_SOURCE_DIR}/commands/main.cpp)
+
+target_link_libraries(commands PRIVATE utils)
+
+add_executable(commands_terminal ${CMAKE_CURRENT_SOURCE_DIR}/commands_terminal/main.cpp)
+
+target_link_libraries(commands_terminal PRIVATE utils)
+
+add_executable(terminal ${CMAKE_CURRENT_SOURCE_DIR}/terminal/main.cpp)
+
+#add_executable(terminal ${CMAKE_CURRENT_SOURCE_DIR}/terminal/main.cpp)
+
+target_link_libraries(terminal PRIVATE utils)
+
+add_executable(curves ${CMAKE_CURRENT_SOURCE_DIR}/curves/main.cpp)
+
+target_link_libraries(curves PRIVATE utils)
+
+add_executable(tcomponents ${CMAKE_CURRENT_SOURCE_DIR}/tcomponents/main.cpp)
+
+target_link_libraries(tcomponents PRIVATE utils)

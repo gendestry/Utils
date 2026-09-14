@@ -4,6 +4,39 @@ The matches in the following method don't have to be full matches:
 - Method find returns the first match found in the searched string
 - Method findAll returns all matches in the searched string
 
+## Groups
+
+`{<search>}` captures what it matches. `findGroupsInfo` returns the first match together
+with its captures, `findAllGroupsInfo` every match in the text, and `matchGroupsInfo` only
+matches when the pattern covers the whole text. Each `MatchInfo` carries `match`, `start`,
+`len`/`end()` and a `groups` vector with the same fields.
+See `examples/regex_groups/main.cpp`.
+
+Three rules decide what ends up in `groups`:
+
+- Only `{}` produces an entry. `(a|b)` groups for alternation but never becomes a capture;
+  the `{}` inside it are reported as if the parens weren't there.
+- A `{}` inside a `{}` is reported under it, to any depth. The outer group's `match` is
+  still its whole span, so `{{'-'}?{\d+}}` gives `"-3"` with `"-"` and `"3"` beneath it.
+- A repeated group keeps every iteration: `({\d+}',')+` over `1,2,3,` reports three
+  entries, not just the last.
+
+Consequently indices are positional only if the pattern says so — an optional group that
+didn't participate leaves no entry at all, so check `groups.size()` instead of assuming a
+fixed slot.
+
+```cpp
+Utils::Regex::Matcher flagRegex(R"('%'{'-'?\d+}?\T)");
+
+// Hold the optional in a variable: iterating over *call() dangles on GCC < 15.
+auto matches = flagRegex.findAllGroupsInfo("%-3S %H, %1M");
+if (!matches) return;
+
+for (auto& m : *matches)
+    for (auto& g : m.groups)
+        std::println("{} -> width '{}'", m.match, g.match);
+```
+
 ## Search possibilities
 - `'text'`: match text
 - `[<c1> - <c2>]`: match digits or characters in range from c1 to c2 (c2 needs to be bigger)

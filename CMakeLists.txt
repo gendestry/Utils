@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # find_package(magic_enum CONFIG REQUIRED)
 
 # Collect source files
-file(GLOB_RECURSE SOURCES src/*.cpp)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 

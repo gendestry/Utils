@@ -1,0 +1,80 @@
+@startuml interfaces
+title Terminal — the interface catalogue
+
+skinparam shadowing false
+hide empty members
+left to right direction
+
+package "Utils::Terminal::Iface — opt-in mixins" #F8F8F8 {
+
+  interface OnEvent {
+    +callback : Callback
+    +setCallback(Callback)
+    +onEvent(Event&) <<virtual>>
+  }
+  note bottom of OnEvent
+    The raw channel. A widget with no
+    specific interface still sees every
+    event through this one.
+  end note
+
+  interface OnHover {
+    +isHovered : bool
+    +onEnter : Callback
+    +onLeave : Callback
+    +setHovered(bool)
+    #onHoverChanged(bool) <<virtual>>
+  }
+
+  interface OnClick {
+    +isPressed : bool
+    +onPress : Callback<MouseButton>
+    +onRelease : Callback<MouseButton>
+    +setPressed(bool, MouseButton)
+    #onClicked(MouseButton) <<virtual>>
+  }
+
+  interface OnFocus {
+    +hasFocus : bool
+    +onFocusGained : Callback
+    +onFocusLost : Callback
+    +setFocus(bool)
+    #onFocusChanged(bool) <<virtual>>
+  }
+
+  interface OnKey {
+    +onChar : Callback<char>
+    +onKey : Callback<EventType>
+    #onKeyPressed(EventType) <<virtual>>
+  }
+
+  interface OnScroll {
+    +onScroll : Callback<int>
+    #onScrolled(int delta) <<virtual>>
+  }
+
+  interface OnDrag {
+    +dragOrigin : Point
+    +onDragStart : Callback<Point>
+    +onDragMove : Callback<Point>
+    +onDragEnd : Callback<Point>
+    #onDragged(Point delta) <<virtual>>
+  }
+}
+
+note as PATTERN
+  **Every mixin has the same three parts**
+
+  **state**     — what render() reads
+  **callbacks** — compose: assign a lambda
+  **hook**      — inherit: override it, protected
+                  so it can't steal the callback
+
+  Each setter calls invalidate() itself, so a
+  hover change repaints with no widget code.
+end note
+
+OnHover .. PATTERN
+OnClick .. PATTERN
+
+@enduml

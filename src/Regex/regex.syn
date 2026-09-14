@@ -7,6 +7,7 @@ ops -> escape
 ops -> txt
 ops -> range
 
+capture -> lcurly inter+ rcurly
 paren -> lpar inter+ (or inter+)+ rpar
 txt -> apostrophe ... apostrophe
 range -> lbrack (\c | \C | \d) minus (\c | \C | \d) rbrack
@@ -21,4 +22,3 @@ operators -> plus
 operators -> asterix
 operators -> question_mark
 operators -> lcurly number comma number rcurly
-

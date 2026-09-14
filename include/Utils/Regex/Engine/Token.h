@@ -39,10 +39,16 @@ namespace Utils::Regex::Engine
             LCURLY,
             RCURLY,
             COMMA,
+            EXCLAMATION,
 
 
             WHITE_SPACE,
             TAB,
+            ANY,
+
+            // A character the tokenizer does not recognise. No grammar rule accepts
+            // it, so it makes parse() fail instead of silently vanishing.
+            UNKNOWN,
 
         } type;
 
@@ -77,7 +83,7 @@ namespace Utils::Regex::Engine
             this->txt_value = txt_value;
         }
 
-        std::string toString()
+        std::string toString() const
         {
             std::string type;
             switch (this->type)
@@ -151,12 +157,20 @@ namespace Utils::Regex::Engine
             case Token::N:
                 type = "N";
                 break;
+            case Token::EXCLAMATION:
+                type = "EXCLAMATION";
+                break;
+            case Token::ANY:
+                type = "ANY";
+                break;
             default:
                 type = "UNKNOWN";
                 break;
             }
 
             // return type;
+            if (this->type == Token::UNKNOWN)
+                return type + "<" + std::string(1, c_value) + ">";
             if (this->type == Token::TXT)
                 return type + "<" + txt_value + ">";
             if (this->type == Token::N)

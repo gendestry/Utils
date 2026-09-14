@@ -1,0 +1,190 @@
+@startuml layout
+title Terminal — layout: measure up, arrange down
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 30
+skinparam ranksep 45
+hide empty members
+
+package "Utils::Maths" #F8F8F8 {
+  class Rectangle {
+    +pos : Point
+    +width : float
+    +height : float
+    +contains(Point) : bool
+  }
+}
+
+package "Utils::Terminal::Iface" #F8F8F8 {
+
+  class LayoutSpec <<value>> {
+    +width : optional<float>
+    +height : optional<float>
+    +grow : float = 0
+    +shrink : float = 1
+  }
+  note right of LayoutSpec
+    What the widget **wants**.
+    Written by the caller (or by a
+    decorator such as flex), never
+    by the layout pass.
+  end note
+
+  abstract class Renderable {
+    +layout : LayoutSpec
+    +border : optional<Border>
+    --
+    +measure() : Size <<virtual>>
+    +arrange(Rectangle) <<virtual>>
+    +render(TerminalManipulation&) <<abstract>>
+    --
+    +focusable() : bool <<virtual>>
+    +hittable() : bool <<virtual>>
+  }
+  note right of Renderable
+    Renderable **is** a Rectangle, so
+    arrange() writing into pos/width/height
+    is the whole layout result. Absolute
+    screen cells — no parent-relative space.
+  end note
+
+  Rectangle <|-- Renderable
+  Renderable *-- LayoutSpec
+
+  interface Invalidator {
+    +invalidate(Renderable&) <<abstract>>
+    +relayout() <<abstract>>
+  }
+}
+
+package "Utils::Terminal::Components" #F8F8F8 {
+
+  class Box {
+    +axis : Axis
+    +gap : float
+    +padding : float
+    +align : Align
+    +children : vector<unique_ptr<Renderable>>
+    --
+    +measure() : Size
+    +arrange(Rectangle)
+    --
+    -distributeFlex(sizes, avail)
+    -snapToCells(sizes, avail)
+  }
+
+  enum Axis {
+    Horizontal
+    Vertical
+  }
+
+  enum Align {
+    Start
+    Center
+    End
+    Stretch
+  }
+
+  class Button {
+    +text : string
+    +onPress : Callback
+    +measure() : {text.size()+2, 1}
+  }
+
+  class Label {
+    +text : string
+    +measure() : {text.size(), 1}
+  }
+
+  Renderable <|-- Box
+  Renderable <|-- Button
+  Renderable <|-- Label
+  Box o--> "0..*" Renderable : children\n(owns)
+  Box --> Axis
+  Box --> Align
+}
+
+package "the DSL — sugar over construction" #F8F8F8 {
+  class Builders <<free functions>> {
+    +hbox(Elements) : Element
+    +vbox(Elements) : Element
+    +button(string, Callback) : Element
+    +text(string) : Element
+    --
+    +operator|(Element, Decorator) : Element
+    --
+    +border(Element) : Element   <<wraps>>
+    +flex(Element) : Element     <<sets spec.grow = 1>>
+    +color(Color) : Decorator    <<factory>>
+  }
+  note bottom of Builders
+    Two kinds of decorator:
+    **wrappers** insert a node (border, color)
+    **modifiers** set a field on the node
+    they are handed (flex, width, align).
+
+    Element = unique_ptr<Renderable>, so the
+    pipeline builds the retained tree **once**.
+    Nothing is rebuilt per frame, which is why
+    focus and the quadtree may hold pointers.
+  end note
+}
+
+Builders ..> Box : constructs
+Builders ..> Button : constructs
+Builders ..> LayoutSpec : flex / width\nwrite here
+
+package "Utils::Terminal" #F8F8F8 {
+  class Application {
+    -root : unique_ptr<Renderable>
+    -navIndex : Quadtree<Renderable>
+    -focused : Renderable*
+    -dirty : set<Renderable*>
+    --
+    +relayout()
+    +onEvent(Event&)
+    +render(TerminalManipulation&)
+    --
+    +invalidate(Renderable&)
+  }
+  note right of Application
+    **Owns the quadtree** — it is the only
+    thing that owns the root and runs the
+    layout pass. A container never holds one:
+    rects are absolute, so a per-container
+    index would re-partition space the parent
+    already partitioned.
+  end note
+
+  class "Quadtree<Renderable>" as QT {
+    +insert(T*) / clear()
+    +query(Point) : vector<T*>
+    +left/right/up/down(T*) : optional<T*>
+  }
+  note bottom of QT
+    **Not** the hit-test structure.
+    Hit-testing walks the retained tree
+    (O(depth), correct z-order, free
+    clipping). The quadtree answers the
+    one question a tree walk cannot:
+    "nearest focusable in this direction".
+  end note
+
+  Invalidator <|.. Application
+  Application *--> "1" Renderable : root (owns)
+  Application *--> "1" QT : navIndex
+  Application ..> QT : rebuilt at the end\nof every relayout()
+}
+
+legend bottom
+  **Three passes, three directions**
+
+  measure()  bottom-up, pure      — what would I like to be?
+  arrange()  top-down, writes rects — here is what you get
+  render()   top-down, draws        — reads the rect, never changes it
+
+  Keeping them apart is what makes nesting work in a single pass.
+endlegend
+
+@enduml
