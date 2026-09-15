@@ -19,7 +19,7 @@ namespace Utils::Text
         [[nodiscard]] unsigned int accumulate(unsigned int index, unsigned int accOffset = 1) const;
 
         unsigned int operator[](unsigned int index);
-        unsigned int getXOffset(unsigned int index);
+        unsigned int getXOffset(unsigned int index) const;
 
         [[nodiscard]] unsigned int numLinesInBetween(unsigned int start, unsigned int end) const;
         [[nodiscard]] const std::vector<unsigned int>& lines() const;

@@ -29,14 +29,21 @@ namespace Utils::Text
         return accumulate(index);
     }
 
-    unsigned int LineCounter::getXOffset(unsigned int index)
+    // unsigned int LineCounter::getXOffset(unsigned int index)
+    // {
+    //     unsigned int limit = accumulate(index, 0);
+    //     if (limit == 0)
+    //         return index;                  // line 0 starts at index 0
+    //     return index - m_lines[limit] - 1; // other lines start just past their newline
+    //     // unsigned int limit = accumulate(index, 0);
+    //     // return m_lines[limit];
+    // }
+
+    unsigned int LineCounter::getXOffset(unsigned int index) const
     {
-        unsigned int limit = accumulate(index, 0);
-        if (limit == 0)
-            return index;                  // line 0 starts at index 0
-        return index - m_lines[limit] - 1; // other lines start just past their newline
-        // unsigned int limit = accumulate(index, 0);
-        // return m_lines[limit];
+        unsigned int row = accumulate(index);
+        // m_lines[0] is 0 (file start); m_lines[i>0] is the index of the '\n' that ends line i-1
+        return row == 0 ? index : index - m_lines[row] - 1;
     }
 
     unsigned int LineCounter::numLinesInBetween(unsigned int start, unsigned int end) const
