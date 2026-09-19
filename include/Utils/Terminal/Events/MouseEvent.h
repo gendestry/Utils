@@ -28,6 +28,12 @@ inline const char* toString(MouseButton button)
     }
 }
 
+template <typename TType>
+class ResolvedEvent : public Event
+{
+
+};
+
 // Position is a 1-based terminal cell (column, row) -- the same space widget rectangles live in,
 // so it can be fed straight to a hit test without conversion.
 class MouseEvent : public Event

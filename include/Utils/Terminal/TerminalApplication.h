@@ -8,6 +8,7 @@
 #include "Terminal.h"
 #include "Utils/Storage/Quadtree.h"
 
+#include <deque>
 #include <vector>
 
 namespace Utils::Terminal

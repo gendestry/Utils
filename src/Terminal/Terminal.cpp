@@ -333,8 +333,3 @@ void Terminal::readInput()
         term.flush();
     }
 }
-
-void Terminal::draw(const std::string &input)
-{
-    term.flush();
-}

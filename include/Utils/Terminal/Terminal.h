@@ -39,10 +39,9 @@ public:
     }
 
     static std::pair<int, int> getSize();
-    Helper::TerminalManipulation &manipulate(){return term;}
+    Helper::TerminalManipulation &manipulate(){ return term; }
 
     void exit() { reading = false; }
     void readInput();
-    void draw(const std::string &input);
 }; // namespace Utils::Terminal
 }

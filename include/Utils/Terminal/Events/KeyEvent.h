@@ -71,6 +71,18 @@ public:
     EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput);
 };
 
+// Sensei: plavric
+// template <EventType EType>
+// class ResolvedKeyEvent : public KeyEvent
+// {
+//     static EventType getStaticType() { return EType; }
+//     virtual EventType getEventType() const override { return getStaticType(); }
+//     virtual const char* getName() const override { return "";  } // Use magicenum (EType)
+//
+// };
+//
+// using EventCtrlC = ResolvedKeyEvent<EventType::CTRL_C>;
+
 class EventCtrlC : public KeyEvent
 {
 public:

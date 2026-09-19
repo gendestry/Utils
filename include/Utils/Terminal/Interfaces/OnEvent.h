@@ -8,6 +8,8 @@
 
 namespace Utils::Terminal::Iface
 {
+
+// TODO: Rename to EventSink
 struct OnEvent
 {
     using Callback = std::function<void(Events::Event&)>;
