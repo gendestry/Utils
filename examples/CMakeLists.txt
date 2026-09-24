@@ -21,6 +21,12 @@ add_executable(commands ${CMAKE_CURRENT_SOURCE_DIR}/commands/main.cpp)
 
 target_link_libraries(commands PRIVATE utils)
 
+add_executable(commands2 ${CMAKE_CURRENT_SOURCE_DIR}/commands2/main.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/commands2/Args.cpp
+)
+
+target_link_libraries(commands2 PRIVATE utils)
+
 add_executable(commands_terminal ${CMAKE_CURRENT_SOURCE_DIR}/commands_terminal/main.cpp)
 
 target_link_libraries(commands_terminal PRIVATE utils)

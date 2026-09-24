@@ -14,7 +14,7 @@ Diagrams (PlantUML source beside the rendered PNGs):
 | [layers.png](layers.png) — [source](layers.puml) | events go down, invalidation goes up |
 | [layout.png](layout.png) — [source](layout.puml) | containers, flex, and who owns the quadtree |
 | [layout-pass.png](layout-pass.png) — [source](layout-pass.puml) | one layout pass, measure to render |
-| [claude.png](claude.png) — [source](claude.puml) | the implemented layer in `include/Utils/Terminal/Claude` |
+| [claude.png](claude.png) — [source](claude.puml) | the implemented layer in `../removable/Claude` |
 
 Regenerate after editing a `.puml`:
 

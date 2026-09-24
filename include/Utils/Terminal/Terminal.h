@@ -1,6 +1,6 @@
 #pragma once
-#include "Helper/TerminalManipulation.h"
-#include "Interfaces/OnEvent.h"
+#include "Events/Event.h"
+#include "TerminalManipulation.h"
 
 #include <memory>
 #include <optional>
@@ -11,11 +11,13 @@
 
 namespace Utils::Terminal
 {
-class Terminal : public Iface::OnEvent
+class Terminal : public Events::OnEvent
 {
     termios original{};
     Helper::TerminalManipulation term;
     bool reading = true;
+
+    // std::function<bool()>
 
     std::optional<char> readNext();
     // Waits up to `timeoutMs` for input; used to tell a lone ESC from the start of a sequence.
@@ -26,8 +28,6 @@ class Terminal : public Iface::OnEvent
     std::unique_ptr<Events::Event> readCsi(uint8_t extra);
     std::unique_ptr<Events::Event> readSs3(uint8_t extra);
     std::unique_ptr<Events::Event> readSgrMouse();
-
-    void handleEnter(std::string &input);
 
 public:
     Terminal();

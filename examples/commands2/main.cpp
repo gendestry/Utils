@@ -5,13 +5,67 @@
 // predicate fallback ("bare number" = "done <n>").
 //
 
+#include "Args.h"
+#include "Registry.h"
 #include "Utils/Commands/Registry.h"
+#include "Utils/Text/String.h"
 
 #include <iostream>
 #include <print>
 #include <string>
 #include <vector>
+    struct Ctx {};
 
+static void run(const Registry<Ctx> &reg, Ctx &ctx, const std::string &line)
+{
+    Args args(line);
+    std::println("> {}", line);
+
+    if (args.empty())
+        return;
+
+    // Single key here since this app's scheme is just "verb"; an app with
+    // "verb/object" keys would pass the fallback chain instead, e.g.
+    // resolve({"add/urgent", "add"}, args, ctx).
+    auto res = reg.resolve(args.command(), args, ctx);
+    if (res)
+    {
+        if (!res.cmd->func(args, ctx))
+            std::println("  usage: {}", res.cmd->usage);
+    }
+    else if (res.blocked())
+    {
+        std::println("  {}", res.reason);
+    }
+    else
+    {
+        std::println("  unknown command: '{}'", args.command());
+    }
+}
+
+int main()
+{
+    Ctx ctx;
+    Registry<Ctx> registry;
+    registry.add("test", "dec", "usage", [&](const Ctx&) {return true; },
+        [&](const Args& args, const Ctx&) {return true; }, "fail");
+    registry.add("print", "dec", "usage", [&](const Ctx&) {return true; },
+        [&](const Args& args, const Ctx&) {std::cout << args.toString() << std::endl; return true; }, "fail");
+    std::string line;
+    while (std::getline(std::cin, line))
+    {
+        run(registry, ctx, line);
+        // std::cout << args.toString() << std::endl;
+        // auto spl = Utils::String::split(Utils::String::normalize_spaces(line), " ");
+        // for (auto &s : spl)
+        // {
+        //     std::print("{} ", s);
+        // }
+        // std::println("");
+    }
+}
+
+/*
 using namespace Utils::Commands;
 
 struct Task
@@ -161,3 +215,4 @@ int main()
 
     return 0;
 }
+*/

@@ -4,8 +4,8 @@
 
 #pragma once
 #include "OnEvent.h"
-// #include "Utils/Terminal/Helper/Border.h"
-#include "Utils/Terminal/TerminalManipulation.h"
+#include "Utils/Terminal/Helper/Border.h"
+#include "Utils/Terminal/Helper/TerminalManipulation.h"
 #include "Utils/Math/Rectangle.h"
 #include <optional>
 
@@ -23,7 +23,7 @@ struct Renderable : public Maths::Rectangle, public OnEvent
 
     // Drawn one cell outside the widget's rectangle, after render(). The widget's own bounds
     // don't grow, so leave a free cell around it.
-    // std::optional<Helper::Border> border;
+    std::optional<Helper::Border> border;
 
     // Only focusable widgets receive input from the Screen.
     virtual bool focusable() const { return false; }

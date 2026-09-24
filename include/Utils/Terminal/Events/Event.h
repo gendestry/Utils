@@ -1,8 +1,10 @@
 #pragma once
+#include <functional>
 #include <string>
 
 namespace Utils::Terminal::Events
 {
+
 enum class EventType
 {
     CTRL_C,
@@ -20,7 +22,8 @@ enum class EventType
     MOUSE_RELEASED,
     MOUSE_MOVED,
     MOUSE_DRAGGED,
-    MOUSE_SCROLLED
+    MOUSE_SCROLLED,
+    UPDATE,
 };
 
 #define BIT(x) (1 << (x))
@@ -79,4 +82,20 @@ public:
 private:
     Event& m_event;
 };
+
+struct OnEvent
+{
+    using Callback = std::function<void(Events::Event &)>;
+    Callback callback;
+
+    virtual ~OnEvent() = default;
+
+    void setCallback(Callback cb) {callback = std::move(cb);}
+    virtual void onEvent(Events::Event& event)
+    {
+        if (callback)
+            callback(event);
+    }
+};
+
 }

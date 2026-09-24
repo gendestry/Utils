@@ -3,8 +3,8 @@
 //
 
 #pragma once
-#include "Utils/Terminal/Events/MouseEvent.h"
-#include "Utils/Terminal/Terminal.h"
+#include "../include/Utils/Terminal/Events/MouseEvent.h"
+#include "../include/Utils/Terminal/Terminal.h"
 #include "Interfaces/Renderable.h"
 #include "Utils/Storage/Quadtree.h"
 
@@ -144,8 +144,8 @@ public:
         for (auto& widget : widgets)
         {
             widget->render(term);
-            // if (widget->border)
-            //     widget->border->draw(term, *widget);
+            if (widget->border)
+                widget->border->draw(term, *widget);
         }
 
         if (focused && focused->placeCursor(term))

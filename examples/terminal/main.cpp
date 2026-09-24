@@ -11,8 +11,8 @@
 #include "Utils/Terminal/Events/MouseEvent.h"
 #include "Utils/Terminal/Terminal.h"
 #include "Utils/Terminal/TerminalApplication.h"
-#include "Utils/Terminal/old/NavContainer.h"
-#include "Utils/Terminal/old/Screen.h"
+// #include "Utils/Terminal/old/NavContainer.h"
+// #include "Utils/Terminal/old/Screen.h"
 
 #include <algorithm>
 #include <memory>
@@ -99,50 +99,6 @@ int main()
     return 0;
 }
 #elif 1
-
-namespace Temp
-{
-class Container : public Iface::Renderable
-{
-public:
-    explicit Container(const Rectangle& bounds)
-        : Renderable(bounds.pos, bounds.width, bounds.height), focusables(bounds)
-    {
-    }
-
-    Container(float x, float y, float width, float height)
-        : Container(Rectangle{x, y, width, height})
-    {
-    }
-
-    std::vector<std::unique_ptr<Iface::Renderable>> children;
-    Utils::Quadtree<Iface::Renderable> focusables;
-    Iface::Renderable* focusedChild = nullptr;
-    Iface::HoverTracker hoveredChild;
-
-    // `args` are the child's constructor arguments, with its position relative to the container.
-    template<typename T, typename... Args>
-    T& add(Args&&... args)
-    {
-        auto child = std::make_unique<T>(std::forward<Args>(args)...);
-        T& ref = *child;
-        static_cast<Rectangle&>(ref) = ref.translated(pos);
-        children.push_back(std::move(child));
-
-        if (ref.focusable())
-        {
-            focusables.insert(&ref);
-            if (!focusedChild)
-                focusedChild = &ref;
-        }
-
-        return ref;
-    }
-
-    void render(Helper::TerminalManipulation& term) override
-    {}
-};
-}
 
 int main()
 {

@@ -1,4 +1,4 @@
-#include "../../include/Utils/Terminal/Terminal.h"
+#include "Utils/Terminal/Terminal.h"
 #include "Utils/Colors/Font.h"
 #include "Utils/Terminal/Events/MouseEvent.h"
 #include <poll.h>
