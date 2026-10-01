@@ -107,25 +107,29 @@ int main()
     auto [rows, cols] = Terminal::getSize();
     // auto& c = app.add<Temp::Container>(2,2,cols-2, rows-2);
     // c.border = Helper::Border{};
-    auto& label = app.add<Label>(0,2);
+    auto& label = app.add<Label>(1,2);
     label.text = "Label: 0";
     // // auto& counterRow = app.add<NavContainer>(2, 5, 22, 1);
     // // counterRow.border = Helper::Border{};
-    auto& decrement = app.add<Button>(0, 0, "-");
-    auto& counter = app.add<Label>(6, 0);
-    auto& increment = app.add<Button>(17, 0, "+");
+    // auto& decrement = app.add<Button>(0, 0, "-");
+    // auto& counter = app.add<Label>(6, 0);
+    // auto& increment = app.add<Button>(17, 0, "+");
+
+    auto& textInput = app.add<InputText>(1, 0, 20, 1);
+    textInput.onSubmit = [&](const auto& text)
+    {label.text = text; };
     // // //
-    int count = 0;
-    counter.text = "Count: 0";
-    decrement.onPress = [&] { counter.text = "Count: " + std::to_string(--count); };
-    increment.onPress = [&] { counter.text = "Count: " + std::to_string(++count); };
-    auto& todo = app.add<Checklist>(2, 8, std::vector<std::string>{"Milk", "Eggs", "Bread"});
+    // int count = 0;
+    // counter.text = "Count: 0";
+    // decrement.onPress = [&] { counter.text = "Count: " + std::to_string(--count); };
+    // increment.onPress = [&] { counter.text = "Count: " + std::to_string(++count); };
+    // auto& todo = app.add<Checklist>(2, 8, std::vector<std::string>{"Milk", "Eggs", "Bread"});
 
 
     terminal.setCallback([&](Events::Event & e)
     {
         app.onEvent(e);
-        label.text = e.toString();
+        // label.text = e.toString();
         app.render(terminal.manipulate());
     });
 
