@@ -44,3 +44,7 @@ target_link_libraries(curves PRIVATE utils)
 add_executable(tcomponents ${CMAKE_CURRENT_SOURCE_DIR}/tcomponents/main.cpp)
 
 target_link_libraries(tcomponents PRIVATE utils)
+
+add_executable(terminal_raw ${CMAKE_CURRENT_SOURCE_DIR}/terminal_raw/main.cpp)
+
+target_link_libraries(terminal_raw PRIVATE utils)
